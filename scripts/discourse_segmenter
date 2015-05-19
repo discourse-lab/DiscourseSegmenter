@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+# -*- mode: python; coding: utf-8; -*-
+
+"""
+Parse input text in elementary discourse segments and output them.
+
+USAGE:
+discourse_segmenter [OPTIONS] [FILEs]
+
+@author: Wladimir Sidorenko <Uladzimir Sidarenka>
+
+"""
+
+##################################################################
+# Libraries
+import argparse
+# from conll import CONLL
+# from edseg import EDSSegmenter
+
+##################################################################
+# Constants and Variables
+DEFAULT_ENC = "utf-8"
+Segmenter = None
+
+##################################################################
+# Methods
+def output_forrest():
+    """Split sentence in elementary discourse units and output them."""
+    global Forrest
+    if Forrest.is_empty():
+        return
+    else:
+        foutput.fprint(unicode(Forrest))
+        sds_list = [Segmenter.segment(sent) for sent in Forrest]
+        for sds in sds_list:
+            sds.pretty_print()
+        Forrest.clear()
+
+def main(argv):
+    """
+    Read input text and segment it into elementary discourse units.
+
+    @param argv - command line arguments
+
+    @return \c 0 on success, non-\c 0 otherwise
+    """
+    # process arguments
+    parser = argparse.ArgumentParser(description = """Script for segmenting text
+into elementary discourse units.""")
+    parser.add_argument("-e", "--encoding", help = "input encoding of text", nargs = 1, \
+                        type = str, default = DEFAULT_ENC)
+    parser.add_argument("-f", "--flush", help = "flush output", action="store_true")
+    parser.add_argument("-s", "--skip-line", help = """lines which should be ignored during the
+processing and output without changes (defaults to empty lines)""", nargs = 1, type = str, \
+                        default = "")
+    parser.add_argument("-t", "--type", help = "type of discourse segmenter to use", \
+                            )
+    parser.add_argument("files", help="input files", nargs = '*', metavar="file")
+    args = parser.parse_args()
+
+    # initialize segmenter
+
+##################################################################
+# Main
+istart = True
+output_scope = not args.only_segmentation
+SKIP_LINE = args.skip_line
+
+foutput = AltFileOutput(encoding = args.encoding, flush = args.flush)
+finput = AltFileInput(*args.files, encoding = args.encoding, print_func = foutput.fprint)
+# iterate over input lines
+for line in finput:
+    # output empty and skip_lines and any discourse segments collected so far
+    if line == SKIP_LINE:
+        # print collected sentences
+        output_forrest()
+        # output line
+        foutput.fprint(line)
+    # otherwise, append the line to the CONLL forrest
+    else:
+        Forrest.add_line(line)
+        istart = True
+# output remained EDUs
+output_forrest()

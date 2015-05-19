@@ -1,2 +1,2 @@
-# BParSegmenter
-Discourse Segmenter based on Constituency Synatx Trees
+# Discourse Segmenter
+A collection of various discourse segementers.
