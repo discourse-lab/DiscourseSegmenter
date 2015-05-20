@@ -1,13 +1,48 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# -*- mode: python; coding: utf-8 -*-
 
-from __future__ import unicode_literals
-import codecs
+##################################################################
+# Documentation
+"""
+Module providing useful routines for rule-based discourse segmentation
+
+Constants:
+
+Methods:
+match - custom match function
+
+Classes:
+Trie - implementation of the trie data structure
+VerbMatcher - class used to match finite verbs
+StartOfClauseMatcher - class used to match beginning of clauses
+
+Exceptions:
+NotFinal - exception raised by Trie if match does not reach final state
+AlreadyFinalized - exception raised by StartOfClauseMatcher on an attempt
+           to add a rule after matcher has already been finalized
+
+@author = Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
+@mail = <vancoppenolle at uni dash potsdam dot de>, <sidarenk at uni dash potsdam dot de>
+"""
+
+##################################################################
+# Libraries
 from collections import defaultdict
 from functools import partial
+import codecs
 
-
+##################################################################
+# Methods
 def match(tokens, *search, **options):
+    """
+    Custom search on tokens for specified patterns
+
+    @param tokens - input tokens in which pattern should be searched
+    @param search - searched pattern
+    @param options - search options
+
+    @return \c True if pattern was found, \c False otherwise
+    """
     if options.get('reverse'):
         tokens = reversed(tokens)
         search = reversed(search)
@@ -20,18 +55,68 @@ def match(tokens, *search, **options):
             return False
     return True
 
-
+##################################################################
+# Classes
 class Trie(object):
+    """
+    Implementation of the trie data structure
+
+    Constants:
+    _SENTINEL - default object to comapre with to ensure that the matched object is valid
+
+    Instance variables:
+    start - index of the start state of the trie from which to begin matching
+    _trans - transition table for the states
+    _final - dictionary mapping final states to corresponding tree labels
+    _last_state - last active state used for matching
+
+    Public methods:
+    add_word - add new word to the total trie
+    get - perform match operation on the given string
+    get_state - generate new state for the trie
+    set_final - remember given state as final and associate a lebel with it
+    is_final - check if given state is final
+    get_olabel - return label associated with given final state
+    set_olabel - set new label for the given final state
+    add_trans - add new transitions to the given state
+    get_trans - obtain transitions emitted by the given state
+    iter_trans - iterate over transitions of the given state
+    as_dot - output trie in dotty format
+
+    Exceptions:
+    NotFinal - exception raised when match does not reach final state
+
+    """
+
     class NotFinal(Exception):
+        """
+        Custom exception thrown when the trie has no more transitions and there is no default
+
+        This class subclasses `Exception`
+        """
+
         pass
 
+    _SENTINEL = object()
+
     def __init__(self):
+        """
+        Class constructor
+        """
         self.start = 0
         self._trans = defaultdict(dict)
         self._final = {}
         self._last_state = self.start
 
-    def add_word(self, word, output=None):
+    def add_word(self, word, output = None):
+        """
+        Add new word to the trie
+
+        @param word - word to be added
+        @param output - list of constraints associated with the final state
+
+        @return final state associated with that word
+        """
         state = self.start
         for char in word:
             state = self.add_trans(state, char)
@@ -47,9 +132,17 @@ class Trie(object):
             state = next_state
         return state in self._final
 
-    _SENTINEL = object()
-
     def get(self, string, holistic=True, default=_SENTINEL):
+        """
+        Perform match operation on the given string
+
+        @param string - string on which to perform the match
+        @param holistic - boolean flag indicating whether complete string
+                          should be covered by match
+        @param default - default label to be returned on failed match
+
+        @return list of constraints associated with the final state
+        """
         last_output = self._SENTINEL
         state = self.start
         for char in string:
@@ -71,28 +164,72 @@ class Trie(object):
             raise
 
     def get_state(self):
+        """
+        Generate new state for the given trie
+
+        @return index of the newly generated state
+        """
         self._last_state += 1
         return self._last_state
 
     def set_final(self, state, olabel=None):
+        """
+        Remember given state as final and associate a lebel with it
+
+        @param state - state whose status should be checked
+        @param olabel - output label to associate with that state
+
+        @return self
+        """
         self._final[state] = olabel
         return self
 
     def is_final(self, state):
+        """
+        Check if given state is final
+
+        @param state - state whose status should be checked
+
+        @return \c True if state is final, \c False otherwise
+        """
         return state in self._final
 
     def get_olabel(self, state):
+        """
+        Retrieve label associated with given final state
+
+        @param state - final state whose label should be retrieved
+
+        @return output label of the final state
+        """
         try:
             return self._final[state]
         except KeyError:
             raise self.NotFinal(state)
 
     def set_olabel(self, state, olabel):
+        """
+        Set new label for the given final state
+
+        @param state - final state whose label should be set
+        @param olabel - output label associated with the state
+
+        @return \c void
+        """
         if state not in self._final:
             raise self.NotFinal(state)
         self._final[state] = olabel
 
     def add_trans(self, state, ilabel, next_state=None):
+        """
+        Add new transitions to the given state
+
+        @param state - state for which new transition should be added
+        @param ilabel - input character associated with the transition
+        @param next_state - target state of the transition
+
+        @return target state permitted by transition
+        """
         if next_state is None:
             try:
                 return self._trans[state][ilabel]
@@ -104,19 +241,42 @@ class Trie(object):
         return next_state
 
     def get_trans(self, state, ilabel):
+        """
+        Obtain transitions emitted by the given state
+
+        @param state - state index whose transitions should be checked
+        @param ilabel - input character associated with the transition
+
+        @return index of the traget node permitted by transition, \c None otherwise
+        """
         trans = self._trans.get(state)
         if trans is None:
             return
         return trans.get(ilabel)
 
     def iter_trans(self, state):
+        """
+        Iterate over transitions of the given state
+
+        @param state - index of the state whose transitions should be traversed
+
+        @return iterator over state's outgoing transitions
+        """
         for (ilabel, next_state) in self._trans[state].iteritems():
             yield (ilabel, next_state)
 
-    def as_dot(self, name=None):
+    def as_dot(self, name = None):
+        """
+        Output trie in dotty format
+
+        @param name - title for the returned graph
+
+        @return string representation of given Trie in dotty format
+        """
+
         if name is None:
             name = self.__class__.__name__
-        dot = ['digraph {0} {{'.format(name)]
+        dot = ["digraph {0} {{".format(name)]
         dot.append('\trankdir=LR;')
         dot.append('\tnode [shape=circle];')
         dot.append('\tedge [arrowsize=.5];')
@@ -139,7 +299,23 @@ class Trie(object):
 
 
 class VerbMatcher(object):
+    """
+    Class used to match finite verbs
+
+    Instance variables:
+    _trie - underlying trie used for matching
+
+    Public methods:
+    match - perform match operation on the given verb
+
+    """
+
     def __init__(self, verbs):
+        """
+        Class constructor
+
+        @param verbs - list of verbs to build trie from
+        """
         self._trie = Trie()
         for verb in verbs:
             if '|' in verb:
@@ -171,6 +347,14 @@ class VerbMatcher(object):
                 self._trie.add_word(stem, output=constraints)
 
     def match(self, verb, dependants):
+        """
+        Check given verb against internal trie
+
+        @param verb - verb to be matched
+        @param dependants - syntactic dependants of the input verb
+
+        @return \c True if verb was matched and none of the constraints satisfied
+        """
         try:
             constraints = self._trie.get(verb)
         except Trie.NotFinal:
@@ -194,10 +378,45 @@ class VerbMatcher(object):
 
 
 class StartOfClauseMatcher(object):
+    """
+    Class used to match beginning of clauses
+
+    Class methods:
+    from_file - create an instance from file containing rules
+
+    Instance variables:
+    _forward_trie - internal trie used to perform forward match
+    _reverse_trie - internal trie used to perform reverse match
+    _forward_depths - auxiliary stack to keep track of forward matches
+    _reverse_depths - auxiliary stack to keep track of reverse matches
+    finalized - boolean flag indicating whether that instance has been
+                finalized and shouldn't be changed or not
+
+
+    Public methods:
+    add_rule -
+    finalize -
+    match -
+
+    Exceptions:
+    AlreadyFinalized - exception raised on an attempt to add new rule after
+                       matcher has already been finalized
+
+    """
+
     class AlreadyFinalized(Exception):
+        """
+        Exception raised on an attempt to add new rule after finalization
+
+        This class subclasses `Exception`
+        """
+
         pass
 
     def __init__(self):
+        """
+        Class constructor
+        """
         self._forward_trie = Trie()
         self._reverse_trie = Trie()
         self._forward_depths = {}
@@ -206,6 +425,13 @@ class StartOfClauseMatcher(object):
 
     @classmethod
     def from_file(cls, filepath):
+        """
+        Create an instance from file containing rules
+
+        @param filepath - path to rule file
+
+        @return an instance of that class
+        """
         matcher = cls()
         with codecs.open(filepath, encoding='utf-8') as fp:
             for line in fp:

@@ -1,6 +1,8 @@
 #!/usr/bin/env python2.7
 # -*- mode: python; coding: utf-8; -*-
 
+##################################################################
+# Documentation
 """
 This module provides a convenient interface for handling CONLL data.
 
