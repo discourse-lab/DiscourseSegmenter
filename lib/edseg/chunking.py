@@ -4,7 +4,7 @@
 ##################################################################
 # Documentation
 """
-Module providing rule-based clause segmenter.
+Module providing internal rule-based clause segmenter
 
 Constants:
 

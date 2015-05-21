@@ -21,12 +21,12 @@ setup(name = "dsegmenter", version = "0.0.1dev1", \
           license = "MIT", \
           url = "https://github.com/WladimirSidorenko/DiscourseSegmenter", \
           package_dir = {"": "lib"}, \
-          packages = ["edseg", "bpseg"], \
-          package_data = [], \
+          packages = ["bpseg", "edseg", "treeseg"], \
+          package_data = {}, \
           requires = ["scikit-learn (>=0.15.2)", \
                           "numpy (>=1.9.2)", \
                           "nltk (>=3.0.2)"], \
-          provides = ["dsegmenter (0.0.1dev1)"]
+          provides = ["dsegmenter (0.0.1)"]
           scripts = [path.join("scripts", "discourse_segmenter")], \
           classifiers = ["Development Status :: 2 - Pre-Alpha", \
                              "Environment :: Console", \
@@ -41,4 +41,4 @@ setup(name = "dsegmenter", version = "0.0.1dev1", \
                              "Programming Language :: Python :: 2.7", \
                              "Programming Language :: Python :: 3", \
                              "Topic :: Text Processing :: Linguistic"], \
-          keywords="discourse segmentation NLP linguistics"):
+          keywords="discourse segmentation NLP linguistics")

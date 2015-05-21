@@ -2,12 +2,12 @@
 # -*- mode: python; coding: utf-8 -*-
 
 """
-Module providing rule-based clause segmenter.
+Module providing rule-based clause segmenter
 
 Constants:
 
 Methods:
-catgetter - method for obtaining category of CONLL node.
+catgetter - method for obtaining category of CONLL node
 
 Classes:
 ClauseSegmenter - class for doing clause segmentation
