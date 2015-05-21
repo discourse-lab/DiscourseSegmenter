@@ -90,7 +90,7 @@ class Trie(object):
 
     class NotFinal(Exception):
         """
-        Custom exception thrown when the trie has no more transitions and there is no default
+        Exception thrown when the trie has no more transitions and there is no default
 
         This class subclasses `Exception`
         """
@@ -387,15 +387,18 @@ class StartOfClauseMatcher(object):
     Instance variables:
     _forward_trie - internal trie used to perform forward match
     _reverse_trie - internal trie used to perform reverse match
-    _forward_depths - auxiliary stack to keep track of forward matches
-    _reverse_depths - auxiliary stack to keep track of reverse matches
+    _forward_depths - auxiliary dictionary associating every forward state
+                      with its distance from start
+    _reverse_depths - auxiliary dictionary associating every backward state
+                      with its distance from start
     finalized - boolean flag indicating whether that instance has been
                 finalized and shouldn't be changed or not
 
 
     Public methods:
-    add_rule -
-    finalize -
+    add_rule - parse and add new rule to forward and backward tries
+    finalize - compute depth levels of trie states and mark current
+               instance as final
     match -
 
     Exceptions:
@@ -446,6 +449,13 @@ class StartOfClauseMatcher(object):
         return matcher
 
     def add_rule(self, rule):
+        """
+        Parse and add new rule to forward and backward tries
+
+        @param rule - string containing rule to be added
+
+        @return self
+        """
         if self.finalized:
             raise self.AlreadyFinalized
         try:
@@ -465,6 +475,11 @@ class StartOfClauseMatcher(object):
         return self
 
     def finalize(self):
+        """
+        Compute depth levels of trie states and mark current instance as final
+
+        @return self
+        """
         if self.finalized:
             return self
         self._set_depths()
@@ -473,6 +488,14 @@ class StartOfClauseMatcher(object):
         return self
 
     def match(self, tokens, prev_tokens):
+        """
+        Match tokens against internal tries
+
+        @param tokens - tokens to be matched
+        @param prev_tokens - preceding tokens
+
+        @return \c True if trie matches tokens, \c False otherwise
+        """
         self.finalize()
         if not hasattr(tokens, '__getitem__'):
             tokens = list(tokens)
