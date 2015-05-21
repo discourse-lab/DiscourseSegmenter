@@ -87,3 +87,89 @@ for line in finput:
         istart = True
 # output remained EDUs
 output_forrest()
+
+def main(argv) :
+    """
+    Main method for training and testing BitPar discourse segmenter.
+
+    @param argv - list of command line arguments
+
+    @return 0 on success, non 0 otherwise
+
+    """
+    # initialize argument parser
+    aparser = argparse.ArgumentParser(description = """BitPar-based discourse segmenter.""")
+    aparser.add_argument("mode", help = """operational mode""", choices = \
+                             ["train", "test", "eval"], type = str, default = "eval")
+    aparser.add_argument("model", help = """file in which to store or to load the model from""", \
+                             type = str)
+    aparser.add_argument("bpar_dir", help = """directory containing BitPar files""")
+    aparser.add_argument("--seg-dir", help = """directory containing segmentation files""", \
+                             type = str)
+    aparser.add_argument("--out-dir", help = """output directory for segmented files""", type = str)
+    aparser.add_argument("--bpar-sfx", help = """suffix of the names of BitPar files""", \
+                             type = str, default = "")
+    aparser.add_argument("--seg-sfx", help = """suffix of the names of segmentation files""", \
+                             type = str, default = "")
+    aparser.add_argument("--out-sfx", help = """suffix of output file""", default = ".seg", \
+                             type = str)
+    args = aparser.parse_args(argv)
+
+    ret = 0
+    assert os.path.isdir(args.bpar_dir) and os.access(args.bpar_dir, os.R_OK), \
+        "Cannot read from BitPar directory '{:s}'.".format(args.bpar_dir)
+    bpar_files = glob.iglob(os.path.join(args.bpar_dir, '*' + args.bpar_sfx))
+    if not args.out_dir:
+        args.out_dir = os.getcwd()
+
+    BP_SFX_RE = re.compile(re.escape(args.bpar_sfx))
+    # process files
+    if args.mode == "test":
+        # load model
+        assert os.path.exists(args.model) and os.path.isfile(args.model) and \
+            os.access(args.model, os.R_OK), "Can't read model file."
+        imodel = joblib.load(args.model)
+        ctrees = []
+        basefname = outfname = ""
+        tsegmenter = TreeSegmenter()
+
+        for bpf in bpar_files:
+            print >> sys.stderr, "Processing file: " + bpf
+            ctrees = CTree.parse_file(bpf, a_encoding = ENCODING)
+            basefname = BP_SFX_RE.sub("", os.path.basename(bpf))
+            outfname = os.path.join(args.out_dir, basefname + args.out_sfx)
+            bpar_segmenter_segment(imodel, featgen, [ctrees], [outfname])
+    else:
+        mdir = os.path.dirname(args.model)
+        if mdir == '':
+            pass
+        elif os.path.exists(mdir):
+            if not os.path.isdir(mdir) or not os.access(mdir, os.R_OK):
+                puts >> sys.stderr, "Can't write to directory '{:s}'.".format(mdir)
+        else:
+            os.makedirs(mdir)
+
+        assert os.path.isdir(args.seg_dir) and os.access(args.seg_dir, os.R_OK), \
+            "Cannot read from segmentation directory '{:s}'.".format(args.seg_dir)
+        basefname = segf = ""
+        toks2trees = dict(); toks2segs = dict();
+        fname2featseg = dict(); fname2trees = dict();
+        for bpf in bpar_files:
+            basefname = BP_SFX_RE.sub("", os.path.basename(bpf))
+            print >> sys.stderr, "Processing file '{:s}'".format(basefname)
+            segf = os.path.join(args.seg_dir, basefname + args.seg_sfx)
+            if os.path.isfile(segf) and os.access(segf, os.R_OK):
+                toks2trees, fname2trees[basefname] = read_trees(bpf)
+                toks2segs = read_segments(segf)
+                fname2featseg[basefname] = [(featgen(tree), seg) for tree, seg  in \
+                                                trees2segs(toks2trees, toks2segs).iteritems() \
+                                                if tree.leaves()]
+            else:
+                print >> sys.stderr, \
+                    "WARNING: No segmentation file found for BitPar file '{:s}'.".format(bpf)
+        if args.mode == "train":
+            ret = bpar_segmenter_train(args.model, fname2featseg)
+        else:
+            ret = bpar_segmenter_eval(args.model, args.out_dir, args.out_sfx, fname2featseg, \
+                                          fname2trees)
+    return ret
