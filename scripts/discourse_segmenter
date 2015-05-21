@@ -2,7 +2,7 @@
 # -*- mode: python; coding: utf-8; -*-
 
 """
-Parse input text in elementary discourse segments and output them.
+Parse input text into elementary discourse segments and output them.
 
 USAGE:
 discourse_segmenter [OPTIONS] [FILEs]
@@ -24,17 +24,22 @@ Segmenter = None
 
 ##################################################################
 # Methods
-def output_forrest():
-    """Split sentence in elementary discourse units and output them."""
-    global Forrest
-    if Forrest.is_empty():
+def _output_forrest(a_forrest):
+    """
+    Split each sentence in elementary discourse units and output them
+
+    @param a_forrest - forrest of CONLL dependency trees
+
+    @return \c void
+    """
+    if a_forrest.is_empty():
         return
     else:
-        foutput.fprint(unicode(Forrest))
-        sds_list = [Segmenter.segment(sent) for sent in Forrest]
+        foutput.fprint(unicode(a_forrest))
+        sds_list = [Segmenter.segment(sent) for sent in a_forrest]
         for sds in sds_list:
             sds.pretty_print()
-        Forrest.clear()
+        a_forrest.clear()
 
 def main(argv):
     """
