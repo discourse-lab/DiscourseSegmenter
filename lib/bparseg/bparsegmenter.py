@@ -7,16 +7,16 @@
 Module providing discourse segmenter for constituency trees.
 
 Constants:
-SUBSTITUTEF - custom weighting function used for alignment
+SUBSTITUTEF - custom weighting function used for token alignment
 
 Methods:
-_ispunct
-_prune_punc
-_translate_toks
-tree2tok
-read_trees
-read_segments
-trees2segs
+_ispunct - check if word consists only of punctuation characters
+_prune_punc - remove tokens representing punctuation from set
+_translate_toks - replace tokens and return updated set
+tree2tok - create dictionary mapping constituency trees to numbered tokens
+read_trees - read file and return a list of constituent dictionaries
+read_segments - read file and return a list of segment dictionaries
+trees2segs - align trees with corresponding segments
 
 Classes:
 BparSegmenter - discourse segmenter for constituency trees
@@ -65,9 +65,9 @@ locale.setlocale(locale.LC_ALL, '')
 
 def _ispunct(a_word):
     """
-    Check if word consists only of punctuation characters.
+    Check if word consists only of punctuation characters
 
-    @param a_word - wod to check
+    @param a_word - word to check
 
     @return True if word consists only of punctuation characters, False otherwise
     """
@@ -75,7 +75,7 @@ def _ispunct(a_word):
 
 def _prune_punc(a_toks):
     """
-    Remove tokens representing punctuation from set.
+    Remove tokens representing punctuation from set
 
     @param a_toks - tokens to prune
 
@@ -85,7 +85,7 @@ def _prune_punc(a_toks):
 
 def _translate_toks(a_toks, a_translation):
     """
-    Translate tokens and return translated set.
+    Translate tokens and return translated set
 
     @param a_toks - tokens to be translated
     @param a_translation - translation dictionary for tokens
@@ -128,7 +128,7 @@ def tree2tok(a_cls, a_tree, a_start = 0):
 
 def read_trees(a_fname, a_one_per_line = False):
     """
-    Read file and return a list of constituent dictionaries.
+    Read file and return a list of constituent dictionaries
 
     @param a_fname - name of file to be read
 
@@ -156,7 +156,7 @@ def read_trees(a_fname, a_one_per_line = False):
 
 def read_segments(a_fname):
     """
-    Read file and return a list of segment dictionaries.
+    Read file and return a list of segment dictionaries
 
     @param a_fname - name of file to be read
 
@@ -220,7 +220,7 @@ def read_segments(a_fname):
 
 def trees2segs(a_toks2trees, a_toks2segs):
     """
-    Align trees with corresponding segments.
+    Align trees with corresponding segments
 
     @param a_toks2trees - dictionary mapping tokens to trees
     @param a_toks2segs - dictionary mapping tokens to segments
@@ -276,14 +276,29 @@ class BparSegmenter(object):
     """
     Class for perfoming discourse segmentation on constituency trees.
 
+    Constants:
+    PIPELINE - default pipeline object used for classification
+
     Class methods:
+    featgen - default feature generation function
+    classify - default classification method
 
     Instance variables:
-    featgen - custom function used for default feature generation
+    model - path to the model that is used in classification
+    featgen - pointer to function that is used for feature generation
+    classify - pointer to function that is used for classification
 
     Public instance methods:
+    segment - function for doing doiscourse segmentation on BitPar trees
+    cv_train - train new model in cross-validation mode and pick the best one
+    train - train and store new model
+    test - evalute the model on test data
+
     """
 
+    PIPELINE = Pipeline([('vectorizer', DictVectorizer()),
+                         ('var_filter', VarianceThreshold()),
+                         ('LinearSVC', LinearSVC(C = 0.3, multi_class = 'crammer_singer'))])
     @classmethod
     def featgen(a_cls, a_tree):
         """
@@ -349,7 +364,6 @@ class BparSegmenter(object):
         self.model = DEFAULT_MODEL
         self.featgen = BparSegmenter.featgen
         self.classify = BparSegmenter.classify
-        self.n_folds = N_FOLDS
 
     def segment(self, a_trees):
         """
