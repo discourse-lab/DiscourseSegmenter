@@ -32,8 +32,9 @@ Exceptions:
 ##################################################################
 # Libraries
 from align import nw_align
-from treeseg import TreeSegmenter, DiscourseSegment, CONSTITUENCY, DEFAULT_SEGMENT
+from constants import ENCODING
 from constituency_tree import Tree, CTree
+from treeseg import TreeSegmenter, DiscourseSegment, CONSTITUENCY, DEFAULT_SEGMENT
 
 from sklearn.cross_validation import KFold
 from sklearn.externals import joblib
@@ -277,28 +278,35 @@ class BparSegmenter(object):
     Class for perfoming discourse segmentation on constituency trees.
 
     Constants:
-    PIPELINE - default pipeline object used for classification
+    DEFAULT_CLASSIFIER - default classification method
+    DEFAULT_MODEL - default model to use in classification
+    DEFAULT_PIPELINE - default pipeline object used for classification
 
     Class methods:
     featgen - default feature generation function
     classify - default classification method
 
     Instance variables:
-    model - path to the model that is used in classification
+    model - path to the model that is used for classification
     featgen - pointer to function that is used for feature generation
     classify - pointer to function that is used for classification
+               (it should accept two arguments: pointer to a model and
+               a list of features)
+    _segmenter - internal tree segmenter
 
     Public instance methods:
-    segment - function for doing doiscourse segmentation on BitPar trees
+    segment - function for doing discourse segmentation on BitPar trees
     cv_train - train new model in cross-validation mode and pick the best one
     train - train and store new model
-    test - evalute the model on test data
+    test - evalute model on test data
 
     """
 
-    PIPELINE = Pipeline([('vectorizer', DictVectorizer()),
+    DEFAULT_CLASSIFIER = LinearSVC(C = 0.3, multi_class = 'crammer_singer')
+    DEFAULT_MODEL = os.path.join(os.path.dirname(__file__), "data", "bpar.model")
+    DEFAULT_PIPELINE = Pipeline([('vectorizer', DictVectorizer()),
                          ('var_filter', VarianceThreshold()),
-                         ('LinearSVC', LinearSVC(C = 0.3, multi_class = 'crammer_singer'))])
+                         ('LinearSVC', DEFAULT_CLASSIFIER)])
     @classmethod
     def featgen(a_cls, a_tree):
         """
@@ -344,48 +352,49 @@ class BparSegmenter(object):
         return ret
 
     @classmethod
-    def classify(a_cls, a_model, a_el, a_default = None):
+    def classify(a_cls, a_classifier, a_el, a_default = None):
         """
         Classify given element.
 
         @param a_cls - reference to this class
-        @param a_model - model whch should make predictions
+        @param a_classifier - model whch should make predictions
         @param a_el - constituency tree to be classified
 
         @return assigned class
         """
-        prediction = a_model.predict(featgen(a_el))[0]
+        prediction = a_classifier.predict(featgen(a_el))[0]
         return a_default if prediction.lower() == "none" else prediction
 
-    def __init__(self):
+    def __init__(self, a_featgen = BparSegmenter.featgen, a_classify = BparSegmenter.classify, \
+                     a_model = DEFAULT_MODEL):
         """
-        Class constructor.
+        Class constructor
+
+        @param a_featgen - function to be used for feature generation
+        @param a_classify - pointer to 2-arg function which predicts segment class for BitPar
+                            tree based on the model and features generated for that tree
+        @param a_model - path to a pre-trained model (previously dumped by joblib) or
+                         valid classification object or None
         """
-        self.model = DEFAULT_MODEL
-        self.featgen = BparSegmenter.featgen
-        self.classify = BparSegmenter.classify
+        self.featgen = a_featgen
+        self.classify = a_classify
+        self._update_segmenter(a_model)
 
     def segment(self, a_trees):
         """
-        Create discourse segments based on the BitPar trees.
+        Create discourse segments based on the BitPar trees
 
         @param a_trees - list of sentence trees to be parsed
 
         @return iterator over constructed segment trees
         """
-        if self.model is None:
-            raise RuntimeError("Classification model does not exist.")
-        if self.featgen is None:
-            raise RuntimeError("Featire generation function does not exist.")
-        decfunc = lambda el: self.classify(self.model, el)
-        # construct tree segmenter
-        tsegmenter = TreeSegmenter(a_decfunc = decfunc, a_type = CONSTITUENCY)
-        lines = []
-        slines = ""
         seg_idx = 0
         segments = []
+        if self.model is None:
+            return [DiscourseSegment(a_name = DEFAULT_SEGMENT, a_leaves = t.leaves) \
+                        for t in a_trees]
         for t in trees:
-            tsegmenter.segment(t, segments, decfunc)
+            self._segmenter.segment(self.featgen(t), segments)
             # if classifier failed to create one common segment for
             # the whole tree, create one for it
             if (len(segments) - seg_idx) > 1:
@@ -394,31 +403,30 @@ class BparSegmenter(object):
             seg_idx = len(segments)
         return segments
 
-    def cv_train(self, a_fname2trees, a_fname2featseg, a_out_dir, a_out_sfx):
+    def cv_train(self, a_fname2trees, a_fname2segs, a_path, a_model = DEFAULT_PIPELINE, \
+                     a_folds = N_FOLDS, a_out = False, a_out_dir = os.getcwd, a_out_sfx = ""):
         """
-        Train and store a segmenter model.
+        Train segmenter model in cross vaidation mode and store it
 
         @param a_fname2trees - dictionary mapping file names to sentence trees
-        @param a_fname2featseg - dictionary mapping file names to feature-segment pairs
+        @param a_fname2segs - dictionary mapping file names to segments
+        @param a_out - directory for writing output files
         @param a_out_dir - directory for writing output files
         @param a_out_sfx - suffix which should be appended to output files
 
-        @return \c 0 on success, non-\c 0 otherwise
+        @return \c 3-tuple containing list of macro F-scores, micro
+        F-scores, number of best fold
         """
-        fnames = a_fname2featseg.keys()
-        n_fnames = len(fnames)
-        if n_fnames < self.n_folds:
-            print >> sys.stderr, "Insufficient number of samples for cross-validation: {:d}.".format(\
-                n_fnames)
-            return -1
-
-        processed_fnames = dict()
-        folds = KFold(len(fnames), min(len(fnames), N_FOLDS))
+        assert len(a_fname2trees) == len(a_fname2segs), \
+            "Unmatching number of files with trees and segments."
+        # estimate number of folds
+        a_folds = min(len(a_fname2trees), a_folds)
+        folds = KFold(len(a_fname2trees), a_folds)
+        # generate features for trees
+        fname2feats = {fname: [self.featgen(t) for t in trees] \
+                           for fname, trees in a_fname2trees.iteritems()}
 
         best_i = -1
-        best_macro_f1 = float("-inf")
-        macro_f1 = 0; macro_F1s = []
-        micro_f1 = 0; micro_F1s = []
         pred_segs = []
         pipeline = None
         test_fname = ""
@@ -427,34 +435,27 @@ class BparSegmenter(object):
         istart = ilen = 0
         trees = []
         fname2range = {}
-        fname2gld_pred = {}
-        train_segs = None; test_segs = None
-        train_feats = None; test_feats = None
+        processed_fnames = {}
+        best_macro_f1 = float("-inf")
+        macro_f1 = 0; macro_F1s = []
+        micro_f1 = 0; micro_F1s = []
+        train_segs = test_segs = None
+        train_feats = test_feats = None
         for i, (train, test) in enumerate(folds):
             print >> sys.stderr, "Fold: {:d}".format(i)
-            train_feats = [ftseg[0] for k in train for ftseg in a_fname2featseg[fnames[k]]]
-            train_segs = [str(ftseg[1]) for k in train for ftseg in a_fname2featseg[fnames[k]]]
-
+            train_feats = [feat for k in train for feat in fname2feats[fnames[k]]]
+            train_segs = [str(seg) for k in train for seg in a_fname2segs[fnames[k]]]
             istart = 0
             for k in test:
-                ilen = len(a_fname2featseg[fnames[k]])
+                ilen = len(fname2featseg[fnames[k]])
                 fname2range[fnames[k]] = [istart, istart + ilen]
                 istart += ilen
-            test_feats = [ftseg[0] for k in test for ftseg in a_fname2featseg[fnames[k]]]
-            test_segs = [str(ftseg[1]) for k in test for ftseg in a_fname2featseg[fnames[k]]]
+            test_feats = [feat for k in test for feat in fname2feats[fnames[k]]]
+            test_segs = [str(seg) for k in test for seg in a_fname2segs[fnames[k]]]
             # train classifier
-            pipeline = Pipeline([('vectorizer', DictVectorizer()),
-                                 ('var_filter', VarianceThreshold()),
-                                 #('feature_selection', SelectKBest(k=5000)),
-                                 # ("KDT", KNeighborsClassifier())])
-                                 # ('SGD', SGDClassifier(loss="hinge", penalty="l2"))])
-                                 # ('to_dense', DenseTransformer()),
-                                 # ("RFC", RandomForestClassifier())])
-                                 # ('Tree', DecisionTreeClassifier())])
-                                 ('LinearSVC', LinearSVC(C = 0.3, multi_class = 'crammer_singer'))])
-            pipeline.fit(train_feats, train_segs)
+            a_model.fit(train_feats, train_segs)
             # obtain new predictions
-            pred_segs = pipeline.predict(test_feats)
+            pred_segs = a_model.predict(test_feats)
             # update F1 scores
             _, _, macro_f1, _ = precision_recall_fscore_support(test_segs, pred_segs, average='macro', \
                                                                     pos_label=None)
@@ -467,64 +468,90 @@ class BparSegmenter(object):
             if macro_f1 > best_macro_f1:
                 best_i = i
                 best_macro_f1 = macro_f1
-                joblib.dump(pipeline, a_model)
+                joblib.dump(a_model, a_path)
             # generate new output files, if necessary
-            for k in test:
-                test_fname = fnames[k]
-                if test_fname in processed_fnames and processed_fnames[test_fname] > macro_f1:
-                    continue
-                fname2gld_pred[test_fname] = [(test_segs[i], pred_segs[i]) \
-                                              for i in xrange(*fname2range[test_fname])]
-                processed_fnames[test_fname] = macro_f1
-                trees.append(a_fname2trees[test_fname])
-                out_fname = os.path.join(a_out_dir, os.path.splitext(test_fname)[0] + a_out_sfx)
-                out_fnames.append(out_fname)
-            bpar_segmenter_segment(pipeline, featgen, trees, out_fnames)
-            del trees[:]; del out_fnames[:]; fname2range.clear()
-        print >> sys.stderr, "Average macro F1: {:.2%} +/- {:.2%}".format(np.mean(macro_F1s), \
-                                                                              np.std(macro_F1s))
-        print >> sys.stderr, "Average micro F1: {:.2%} +/- {:.2%}".format(np.mean(micro_F1s), \
-                                                                              np.std(micro_F1s))
-        print >> sys.stderr, "Best model obtained in fold {:d}".format(best_i)
-        return 0
+            if a_output:
+                for k in test:
+                    test_fname = fnames[k]
+                    if test_fname in processed_fnames and processed_fnames[test_fname] > macro_f1:
+                        continue
+                    processed_fnames[test_fname] = macro_f1
+                    trees.append(a_fname2trees[test_fname])
+                    out_fname = os.path.join(a_out_dir, os.path.splitext(test_fname)[0] + a_out_sfx)
+                    out_fnames.append(out_fname)
+                bpar_segmenter_segment(pipeline, featgen, trees, out_fnames)
+                del trees[:]; del out_fnames[:]; fname2range.clear()
+        return (macro_F1s, micro_F1s, best_i)
 
-    def train(self, a_model, a_fname2featseg):
+    def train(self, a_trees, a_segs, a_path, a_model = DEFAULT_PIPELINE):
         """
         Train segmenter model
 
-        @param a_model - file to which the best model should be stored
-        @param a_fname2featseg - dictionary mapping file names to feature-segment pairs
-        @param a_fname2trees - dictionary mapping file names to sentence trees
+        @param a_trees - list of BitPar trees
+        @param a_segs - list of discourse segments
+        @param a_path - path to file in which the trained model should be stored
+        @param a_model - model object whose parameters should be fit
 
-        @return \c 0 on success, non-\c 0 otherwise
+        @return \c void
         """
-        ret = 0
-        train_feats = [ftseg[0] for fname in a_fname2featseg for ftseg in a_fname2featseg[fname]]
-        train_segs = [str(ftseg[1]) for fname in a_fname2featseg for ftseg in a_fname2featseg[fname]]
+        # generate features
+        feats = [self.featgen(t) for t in a_trees]
         # train classifier
-        pipeline = Pipeline([('vectorizer', DictVectorizer()),
-                             ('var_filter', VarianceThreshold()),
-                             #('feature_selection', SelectKBest(k=5000)),
-                             ('LinearSVC', LinearSVC(class_weight='auto'))])
-        pipeline.fit(train_feats, train_segs)
-        joblib.dump(pipeline, a_model)
-        return ret
+        self._train(feats, a_segs, a_model):
+        # store the model to file
+        joblib.dump(a_model, a_path)
 
-    def test(a_model, a_out_dir, a_out_sfx, a_bpf2trees):
+    def test(self, a_trees, a_segments):
         """
-        Train and store a segmenter model.
+        Estimate performance of segmenter model
 
-        @param a_model - file to which the best model should be stored
-        @param a_out_dir - directory for writing output files
-        @param a_out_sfx - suffix which should be appended to output files
-        @param a_fname2trees - dictionary mapping file names to sentence trees
+        @param a_trees - list of BitPar trees
+        @param a_segments - list of corresponding gold segments for trees
 
-        @return \c 0 on success, non-\c 0 otherwise
+        @return 2-tuple with macro and micr F-score
         """
-        ret = 0
-        pipeline = joblib.load(a_model)
-        for iname, itrees in a_bpf2trees.iteritems():
-            trees.append(itrees)
-            out_fnames.append(os.path.join(a_out_dir, os.path.splitext(fname)[0] + a_out_sfx))
-        bpar_segmenter_segment(pipeline, featgen, trees, out_fnames)
-        return ret
+        if self.model is None:
+            return (0, 0)
+        segments = []
+        for itree in a_trees:
+            segments += self.model.predict(itree)
+        _, _, macro_f1, _ = precision_recall_fscore_support(a_segments, segments, average='macro', \
+                                                                    pos_label=None)
+        _, _, micro_f1, _ = precision_recall_fscore_support(a_segments, segments, average='micro', \
+                                                                    pos_label=None)
+        return (macro_f1, micro_f1)
+
+    def _train(self, a_feats, a_segs, a_model):
+        """
+        Train segmenter model
+
+        @param a_feats - list of BitPar featuress
+        @param a_segs - list of discourse segments
+        @param a_model - model object whose parameters should be fit
+
+        @return \c void
+        """
+        # train classifier
+        a_model.fit(a_feats, a_segs)
+        self._update_segmenter(a_model)
+
+    def _update_segmenter(self, a_model):
+        """
+        Update model, decision function, and internal segmenter
+
+        @param a_model - model used by classifier
+
+        @return \c void
+        """
+        if a_model is None:
+            self.model = a_model
+            self.decfunc = lambda el: self.classify(self.model, el)
+            self._segmenter = TreeSegmenter(a_decfunc = self.decfunc, a_type = CONSTITUENCY)
+        elif isinstance(a_model, basestring):
+            if not os.path.isfile(a_model) or not os.access(a_model, os.R_OK):
+                raise RuntimeError("Can't create model from file {:s}".format(a_model))
+            self.model = joblib.load(a_model)
+        else:
+            self.model = a_model
+        self.decfunc = lambda el: self.classify(self.model, el)
+        self._segmenter = TreeSegmenter(a_decfunc = self.decfunc, a_type = CONSTITUENCY)
