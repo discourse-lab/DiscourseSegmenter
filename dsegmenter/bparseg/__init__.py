@@ -16,13 +16,13 @@ bparsegmenter - class for segmenting syntax trees into dicsourse units
 
 ##################################################################
 # Imports
-from constants import ENCODING
-from BparSegmenter
+from constants import ENCODING, NO_PARSE_RE, WORD_SEP
+from bparsegmenter import BparSegmenter
 
 ##################################################################
 # Intialization
 __name__ = "bparseg"
-__all__ = ["ENCODING", "BparSegmenter"]
+__all__ = ["ENCODING", "NO_PARSE_RE", "WORD_SEP", "BparSegmenter"]
 __author__ = "Uladzimir Sidarenka"
 __email__ = "sidarenk at uni dash potsdam dot de"
 __version__ = "0.0.1"

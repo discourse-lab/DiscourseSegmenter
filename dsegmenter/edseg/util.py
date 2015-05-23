@@ -341,7 +341,7 @@ class VerbMatcher(object):
                 self._trie.add_word(stem,
                     output=constraints[:] + [partial(
                         self._has_particle, particle)])
-                self._trie.add_word('{0}{1}'.format(particle, stem),
+                self._trie.add_word(u'{0}{1}'.format(particle, stem),
                     output=constraints)
             else:
                 self._trie.add_word(stem, output=constraints)

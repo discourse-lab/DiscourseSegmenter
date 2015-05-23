@@ -21,8 +21,8 @@ setup(name = "dsegmenter", version = "0.0.1dev1", \
           author_email = "sidarenk@uni-potsdam.de", \
           license = "MIT", \
           url = "https://github.com/WladimirSidorenko/DiscourseSegmenter", \
-          package_dir = {"": "lib"}, \
-          packages = ["bparseg", "edseg", "treeseg"], \
+          packages = ["dsegmenter", "dsegmenter.bparseg", "dsegmenter.edseg", \
+                          "dsegmenter.treeseg"], \
           package_data = {"edseg": [path.join("data", fname) for fname in \
                                         ("dass_verbs.txt", "discourse_preps.txt", \
                                              "finite_verbs.txt", "reporting_verbs.txt", \

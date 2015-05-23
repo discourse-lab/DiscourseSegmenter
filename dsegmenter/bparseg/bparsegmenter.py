@@ -34,7 +34,7 @@ Exceptions:
 from align import nw_align
 from constants import ENCODING
 from constituency_tree import Tree, CTree
-from treeseg import TreeSegmenter, DiscourseSegment, CONSTITUENCY, DEFAULT_SEGMENT
+from ..treeseg import TreeSegmenter, DiscourseSegment, CONSTITUENCY, DEFAULT_SEGMENT
 
 from sklearn.cross_validation import KFold
 from sklearn.externals import joblib
@@ -365,7 +365,7 @@ class BparSegmenter(object):
         prediction = a_classifier.predict(featgen(a_el))[0]
         return a_default if prediction.lower() == "none" else prediction
 
-    def __init__(self, a_featgen = BparSegmenter.featgen, a_classify = BparSegmenter.classify, \
+    def __init__(self, a_featgen = featgen, a_classify = classify, \
                      a_model = DEFAULT_MODEL):
         """
         Class constructor
@@ -497,7 +497,7 @@ class BparSegmenter(object):
         # generate features
         feats = [self.featgen(t) for t in a_trees]
         # train classifier
-        self._train(feats, a_segs, a_model):
+        self._train(feats, a_segs, a_model)
         # store the model to file
         joblib.dump(a_model, a_path)
 

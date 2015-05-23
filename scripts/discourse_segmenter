@@ -13,7 +13,10 @@ discourse_segmenter [OPTIONS] [FILEs]
 
 ##################################################################
 # Libraries
+from dsegmenter import bparseg, edseg
+
 import argparse
+import sys
 # from conll import CONLL
 # from edseg import EDSSegmenter
 
@@ -24,22 +27,6 @@ Segmenter = None
 
 ##################################################################
 # Methods
-def _output_forrest(a_forrest):
-    """
-    Split each sentence in elementary discourse units and output them
-
-    @param a_forrest - forrest of CONLL dependency trees
-
-    @return \c void
-    """
-    if a_forrest.is_empty():
-        return
-    else:
-        foutput.fprint(unicode(a_forrest))
-        sds_list = [Segmenter.segment(sent) for sent in a_forrest]
-        for sds in sds_list:
-            sds.pretty_print()
-        a_forrest.clear()
 
 def main(argv):
     """
@@ -54,12 +41,11 @@ def main(argv):
 into elementary discourse units.""")
     parser.add_argument("-e", "--encoding", help = "input encoding of text", nargs = 1, \
                         type = str, default = DEFAULT_ENC)
-    parser.add_argument("-f", "--flush", help = "flush output", action="store_true")
     parser.add_argument("-s", "--skip-line", help = """lines which should be ignored during the
 processing and output without changes (defaults to empty lines)""", nargs = 1, type = str, \
                         default = "")
     parser.add_argument("-t", "--type", help = "type of discourse segmenter to use", \
-                            )
+                            choices = ("edseg", "bparseg"))
     parser.add_argument("files", help="input files", nargs = '*', metavar="file")
     args = parser.parse_args()
 
@@ -67,109 +53,5 @@ processing and output without changes (defaults to empty lines)""", nargs = 1, t
 
 ##################################################################
 # Main
-istart = True
-output_scope = not args.only_segmentation
-SKIP_LINE = args.skip_line
-
-foutput = AltFileOutput(encoding = args.encoding, flush = args.flush)
-finput = AltFileInput(*args.files, encoding = args.encoding, print_func = foutput.fprint)
-# iterate over input lines
-for line in finput:
-    # output empty and skip_lines and any discourse segments collected so far
-    if line == SKIP_LINE:
-        # print collected sentences
-        output_forrest()
-        # output line
-        foutput.fprint(line)
-    # otherwise, append the line to the CONLL forrest
-    else:
-        Forrest.add_line(line)
-        istart = True
-# output remained EDUs
-output_forrest()
-
-def main(argv) :
-    """
-    Main method for training and testing BitPar discourse segmenter.
-
-    @param argv - list of command line arguments
-
-    @return 0 on success, non 0 otherwise
-
-    """
-    # initialize argument parser
-    aparser = argparse.ArgumentParser(description = """BitPar-based discourse segmenter.""")
-    aparser.add_argument("mode", help = """operational mode""", choices = \
-                             ["train", "test", "eval"], type = str, default = "eval")
-    aparser.add_argument("model", help = """file in which to store or to load the model from""", \
-                             type = str)
-    aparser.add_argument("bpar_dir", help = """directory containing BitPar files""")
-    aparser.add_argument("--seg-dir", help = """directory containing segmentation files""", \
-                             type = str)
-    aparser.add_argument("--out-dir", help = """output directory for segmented files""", type = str)
-    aparser.add_argument("--bpar-sfx", help = """suffix of the names of BitPar files""", \
-                             type = str, default = "")
-    aparser.add_argument("--seg-sfx", help = """suffix of the names of segmentation files""", \
-                             type = str, default = "")
-    aparser.add_argument("--out-sfx", help = """suffix of output file""", default = ".seg", \
-                             type = str)
-    args = aparser.parse_args(argv)
-
-    ret = 0
-    assert os.path.isdir(args.bpar_dir) and os.access(args.bpar_dir, os.R_OK), \
-        "Cannot read from BitPar directory '{:s}'.".format(args.bpar_dir)
-    bpar_files = glob.iglob(os.path.join(args.bpar_dir, '*' + args.bpar_sfx))
-    if not args.out_dir:
-        args.out_dir = os.getcwd()
-
-    BP_SFX_RE = re.compile(re.escape(args.bpar_sfx))
-    # process files
-    if args.mode == "test":
-        # load model
-        assert os.path.exists(args.model) and os.path.isfile(args.model) and \
-            os.access(args.model, os.R_OK), "Can't read model file."
-        imodel = joblib.load(args.model)
-        ctrees = []
-        basefname = outfname = ""
-        tsegmenter = TreeSegmenter()
-
-        for bpf in bpar_files:
-            print >> sys.stderr, "Processing file: " + bpf
-            ctrees = CTree.parse_file(bpf, a_encoding = ENCODING)
-            basefname = BP_SFX_RE.sub("", os.path.basename(bpf))
-            outfname = os.path.join(args.out_dir, basefname + args.out_sfx)
-            bpar_segmenter_segment(imodel, featgen, [ctrees], [outfname])
-    else:
-        mdir = os.path.dirname(args.model)
-        if mdir == '':
-            pass
-        elif os.path.exists(mdir):
-            if not os.path.isdir(mdir) or not os.access(mdir, os.R_OK):
-                puts >> sys.stderr, "Can't write to directory '{:s}'.".format(mdir)
-        else:
-            os.makedirs(mdir)
-
-        assert os.path.isdir(args.seg_dir) and os.access(args.seg_dir, os.R_OK), \
-            "Cannot read from segmentation directory '{:s}'.".format(args.seg_dir)
-        basefname = segf = ""
-        toks2trees = dict(); toks2segs = dict();
-        fname2featseg = dict(); fname2trees = dict();
-        for bpf in bpar_files:
-            basefname = BP_SFX_RE.sub("", os.path.basename(bpf))
-            print >> sys.stderr, "Processing file '{:s}'".format(basefname)
-            segf = os.path.join(args.seg_dir, basefname + args.seg_sfx)
-            if os.path.isfile(segf) and os.access(segf, os.R_OK):
-                toks2trees, fname2trees[basefname] = read_trees(bpf)
-                toks2segs = read_segments(segf)
-                fname2featseg[basefname] = [(featgen(tree), seg) for tree, seg  in \
-                                                trees2segs(toks2trees, toks2segs).iteritems() \
-                                                if tree.leaves()]
-            else:
-                print >> sys.stderr, \
-                    "WARNING: No segmentation file found for BitPar file '{:s}'.".format(bpf)
-        if args.mode == "train":
-            ret = bpar_segmenter_train(args.model, fname2featseg)
-        else:
-            ret = bpar_segmenter_eval(args.model, args.out_dir, args.out_sfx, fname2featseg, \
-                                          fname2trees)
-    return ret
+if __name__ == "__main__":
+    main(sys.argv[1:])

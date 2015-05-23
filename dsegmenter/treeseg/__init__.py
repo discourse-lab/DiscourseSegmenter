@@ -17,7 +17,7 @@ treesegmenter - defines auxiliary class for converting syntax trees
 ##################################################################
 # Imports
 from constants import DEFAULT_SEGMENT, ENCODING, GREEDY, GENEROUS, DEPENDENCY, CONSTITUENCY
-from discourse_segment import DiscoSegmenter
+from discourse_segment import DiscourseSegment
 from treesegmenter import TreeSegmenter
 
 ##################################################################
