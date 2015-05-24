@@ -2,31 +2,102 @@
 # -*- mode: python; coding: utf-8; -*-
 
 """
-Parse input text into elementary discourse segments and output them.
+Parse input text into elementary discourse segments and output them
 
 USAGE:
-discourse_segmenter [OPTIONS] [FILEs]
+discourse_segmenter [GLOBAL_OPTIONS] type [TYPE_SPECIFIC_OPTIONS] [FILEs]
 
 @author: Wladimir Sidorenko <Uladzimir Sidarenka>
 
 """
 
 ##################################################################
-# Libraries
-from dsegmenter import bparseg, edseg
+# Imports
+from dsegmenter.bparseg import BparSegmenter
+from dsegmenter.edseg import EDSSegmenter, CONLL
 
 import argparse
+import codecs
 import sys
-# from conll import CONLL
-# from edseg import EDSSegmenter
 
 ##################################################################
 # Constants and Variables
-DEFAULT_ENC = "utf-8"
+DEFAULT_ENCODING = "utf-8"
+ENCODING = DEFAULT_ENCODING
+EDSEG = "edseg"
+BPARSEG = "bparseg"
 Segmenter = None
 
 ##################################################################
 # Methods
+def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
+    """
+    Return iterator over lines of the input file
+
+    @param a_files - files to read from
+    @param a_encoding - text encoding used for input/output
+    @param a_skip_line - line which should be skipped during iteration
+
+    @return iterator over input lines
+    """
+    if not a_files:
+        a_files = '-'
+
+    for fname in a_files:
+        with codecs.open(fname, encoding = a_encoding) as ifile:
+            for line in ifile:
+                if line == a_skip_line:
+                    print line.encode(a_encoding)
+                else:
+                    yield line.rstrip()
+
+def _output_segment_forrest(a_forrest, a_segmenter, a_output, a_encoding):
+    """
+    Split CONLL sentences in elementary discourse units and output them
+
+    @param a_forrest - pointer to CONLL forrest
+    @param a_segmnter - pointer to discourse segmenter
+    @param a_output - boolean flag indicating whether dependency trees
+                      should be printed
+    @param a_encoding - text encoding used for output
+
+    @return \c void
+    """
+    if a_forrest.is_empty():
+        return
+    else:
+        if a_output:
+            print unicode(a_forrest).encode(a_encoding)
+        sds_list = [a_segmenter.segment(sent) for sent in a_forrest]
+        for sds in sds_list:
+            sds.pretty_print(a_encoding = a_encoding)
+        a_forrest.clear()
+
+def edseg_segment(a_ilines, a_output_trees, a_encoding = DEFAULT_ENCODING):
+    """
+    Perform rule-based segmentation of CONLL dependency trees
+
+    @param a_ilines - iterator over input lines
+    @param a_output_trees - boolean flag indicating whether dependency trees
+                            should be printed
+    @param a_encoding - text encoding used for input/output
+
+    @return \c void
+    """
+    forrest = CONLL()
+    segmenter = EDSSegmenter()
+    for line in a_ilines:
+        if not line:
+            # print collected sentences
+            _output_segment_forrest(forrest, segmenter, a_output_trees, a_encoding)
+            # output line
+            print line.encode(a_encoding)
+        # otherwise, append the line to the CONLL forrest
+        else:
+            forrest.add_line(line)
+            istart = True
+    # output remained EDUs
+    _output_segment_forrest(forrest, segmenter, a_output_trees, a_encoding)
 
 def main(argv):
     """
@@ -39,17 +110,40 @@ def main(argv):
     # process arguments
     parser = argparse.ArgumentParser(description = """Script for segmenting text
 into elementary discourse units.""")
+
+    # define global options
     parser.add_argument("-e", "--encoding", help = "input encoding of text", nargs = 1, \
-                        type = str, default = DEFAULT_ENC)
+                        type = str, default = DEFAULT_ENCODING)
     parser.add_argument("-s", "--skip-line", help = """lines which should be ignored during the
 processing and output without changes (defaults to empty lines)""", nargs = 1, type = str, \
                         default = "")
-    parser.add_argument("-t", "--type", help = "type of discourse segmenter to use", \
-                            choices = ("edseg", "bparseg"))
-    parser.add_argument("files", help="input files", nargs = '*', metavar="file")
+
+    # add type-specific subparsers
+    subparsers = parser.add_subparsers(help="type of discourse segmenter to use", dest = "dtype")
+
+    # edgseg argument parser
+    parser_edseg = subparsers.add_parser(EDSEG, help = "rule-based discourse segmenter for CONLL dependency trees")
+    parser_edseg.add_argument("-o", "--output-trees", help="output dependency trees along with segments", \
+                                  action = "store_true")
+    parser_edseg.add_argument("files", help="input files", nargs = '*', metavar="file")
+
+    # bpar argument parser
+    parser_bpar = subparsers.add_parser(BPARSEG, help = """machine-learning driven discourse segmenter for\
+ BitPar constituency trees""")
+    parser_bpar.add_argument("-m", "--mode", help="select action mode (train, test, or segment)", \
+                                 nargs = 1, type = str, choices = ["train", "test", "segment"], \
+                                 default = "segment")
+    parser_bpar.add_argument("files", help="input files", nargs = '*', metavar="file")
     args = parser.parse_args()
 
+    ifiles = []
+    if hasattr(args, "files"):
+        ifiles = _read_files(args.files, args.encoding, args.skip_line)
     # initialize segmenter
+    if args.dtype == EDSEG:
+        edseg_segment(ifiles, args.output_trees)
+    else:
+        pass
 
 ##################################################################
 # Main

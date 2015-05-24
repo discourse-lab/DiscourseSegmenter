@@ -88,8 +88,8 @@ class EDSSegmenter(object):
         """
         self._sent = sent
         clauses = self._clause_segmenter.segment(sent)
-        sds = Tree(self.SDS_LABEL)
-        eds = self._make_eds(sds, type=self.MAIN_CLAUSE)
+        sds = Tree(SDS_LABEL)
+        eds = self._make_eds(sds, type=MAIN_CLAUSE)
         for idx, clause in enumerate(clauses):
             eds = self._process_clause(clause, idx, clauses, sds, eds)
         return sds
@@ -121,8 +121,8 @@ class EDSSegmenter(object):
             return eds
         return meth(clause, idx, clauses, sds, eds, depth=depth)
 
-    def _pairwise(iterable):
-        iterable = iter(iterable)
+    def _pairwise(self, a_elements):
+        iterable = iter(a_elements)
         prev = next(iterable, None)
         if prev is None:
             return
@@ -134,7 +134,7 @@ class EDSSegmenter(object):
     def _process_maincl(self, clause, idx, parent, sds, eds, depth=0):
         verb, deps = self._find_verb_and_dependants(clause)
         if clause.get('makeVerbLess'):
-            eds = self._make_eds(sds, type=self.MAIN_CLAUSE)
+            eds = self._make_eds(sds, type=MAIN_CLAUSE)
         elif verb is None:
             self._flatten(clause)
             eds.extend(clause)
@@ -143,15 +143,15 @@ class EDSSegmenter(object):
               not data.reporting_verbs.match(verb['lemma'], deps) and
               not self._is_unintroduced_complement(clause, idx, parent)):
             if depth > 0:
-                eds = self._make_embedded_eds(eds, type=self.MAIN_CLAUSE)
+                eds = self._make_embedded_eds(eds, type=MAIN_CLAUSE)
             elif len(eds):
-                eds = self._make_eds(sds, type=self.MAIN_CLAUSE)
+                eds = self._make_eds(sds, type=MAIN_CLAUSE)
         first_token = True
         for idx, child in enumerate(clause):
             if self._is_token(child):
                 if first_token:
-                    if eds.get('type') != self.MAIN_CLAUSE:
-                        eds = self._make_eds(sds, type=self.MAIN_CLAUSE)
+                    if eds.get('type') != MAIN_CLAUSE:
+                        eds = self._make_eds(sds, type=MAIN_CLAUSE)
                     first_token = False
                 eds.append(child)
             else:
@@ -161,10 +161,10 @@ class EDSSegmenter(object):
 
     def _process_sntsubcl(self, clause, idx, parent, sds, eds, depth=0):
         is_complement = False
-        for prev, token in pairwise(clause.terminals(3)):
+        for prev, token in self._pairwise(clause.terminals(3)):
             if not self._is_token(token):
                 break
-            elif token['lemma'] in ('dass', 'daß', 'ob'):
+            elif token['lemma'] in ('dass', u'daß', 'ob'):
                 # comment the if block below, if you want dass-sentences to be
                 # considered as separate EDUs
                 if prev is None or (prev['pos'] != 'ADV' and prev['lemma'] != 'so'):
@@ -178,7 +178,7 @@ class EDSSegmenter(object):
                 eds = self._make_embedded_eds(eds)
             elif len(eds):
                 eds = self._make_eds(sds)
-            eds.set('type', self.SUB_CLAUSE)
+            eds.set('type', SUB_CLAUSE)
         for idx, child in enumerate(clause):
             if self._is_token(child):
                 eds.append(child)
@@ -191,7 +191,7 @@ class EDSSegmenter(object):
         if self._is_nonfin_subord(clause, eds):
             if len(eds):
                 eds = self._make_eds(sds)
-            eds.set('type', self.SUB_CLAUSE)
+            eds.set('type', SUB_CLAUSE)
         for idx, child in enumerate(clause):
             if self._is_token(child):
                 eds.append(child)
@@ -205,7 +205,7 @@ class EDSSegmenter(object):
             eds = self._make_embedded_eds(eds)
         elif len(eds):
             eds = self._make_eds(sds)
-        eds.set('type', self.REL_CLAUSE)
+        eds.set('type', REL_CLAUSE)
         for idx, child in enumerate(clause):
             if self._is_token(child):
                 eds.append(child)
@@ -231,7 +231,7 @@ class EDSSegmenter(object):
                 eds = self._make_embedded_eds(eds)
             elif len(eds):
                 eds = self._make_eds(sds)
-            eds.set('type', self.SUB_CLAUSE)
+            eds.set('type', SUB_CLAUSE)
         for idx, child in enumerate(clause):
             if self._is_token(child):
                 eds.append(child)
@@ -239,7 +239,7 @@ class EDSSegmenter(object):
                 eds = self._process_clause(child, idx, clause, sds, eds,
                                            depth=depth)
         if self._is_token(child) and child['form'] == ':':
-            eds = self._make_eds(sds, type = self.MAIN_CLAUSE)
+            eds = self._make_eds(sds, type = MAIN_CLAUSE)
         return eds
 
     def _process_paren(self, clause, idx, parent, sds, eds, depth=0):
@@ -247,9 +247,9 @@ class EDSSegmenter(object):
                 any(tok['pos'].startswith('VV')
                     for tok in clause.iter_terminals()):
             if depth > 0:
-                eds = self._make_embedded_eds(eds, type=self.PAREN)
+                eds = self._make_embedded_eds(eds, type=PAREN)
             elif len(eds):
-                eds = self._make_eds(sds, type=self.PAREN)
+                eds = self._make_eds(sds, type=PAREN)
         self._flatten(clause)
         eds.extend(clause)
         return sds.last_child
@@ -261,11 +261,11 @@ class EDSSegmenter(object):
 
     def _process_any(self, clause, idx, parent, sds, eds, depth=0):
         if eds is None:
-            eds = self._make_eds(sds, type = self.MAIN_CLAUSE)
+            eds = self._make_eds(sds, type = MAIN_CLAUSE)
         # if preceding EDS was processed by PC, it might not have the type
         # label
         if "type" not in eds.feats:
-            eds.set('type', self.MAIN_CLAUSE)
+            eds.set('type', MAIN_CLAUSE)
         self._flatten(clause)
         eds.extend(clause)
         return eds
@@ -283,7 +283,7 @@ class EDSSegmenter(object):
             return False
         # Test for cases like "..., nämlich dass ..."
         elif (token1.get('pos') != 'ADV' and
-              next(tokens, {}).get('lemma') in ('dass', 'daß')):
+              next(tokens, {}).get('lemma') in ('dass', u'daß')):
             return False
         return data.dass_verbs.match(prev_verb['lemma'], deps)
 
@@ -361,11 +361,11 @@ class EDSSegmenter(object):
         return verb, deps
 
     def _make_eds(self, sds, **feats):
-        sds.append(Tree(self.EDS_LABEL, feats = feats))
+        sds.append(Tree(EDS_LABEL, feats = feats))
         return sds.last_child
 
     def _make_embedded_eds(self, eds, **feats):
         feats['embedded'] = True
-        embed_eds = Tree(self.EDS_LABEL, feats=feats)
+        embed_eds = Tree(EDS_LABEL, feats=feats)
         eds.append(embed_eds)
         return embed_eds

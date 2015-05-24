@@ -29,6 +29,7 @@ AlreadyFinalized - exception raised by StartOfClauseMatcher on an attempt
 # Libraries
 from collections import defaultdict
 from functools import partial
+
 import codecs
 
 ##################################################################

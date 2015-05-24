@@ -203,7 +203,7 @@ class Chunker(object):
                 return False
             return match[3][0]['lemma'] in ('Januar',
                                             'Februar',
-                                            'März',
+                                            u'März',
                                             'Maerz',
                                             'April',
                                             'Mai',

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- mode: python; coding: utf-8 -*-
+# -*- mode: python; coding: utf-8; -*-
 
 """
 Module providing rule-based clause segmenter
@@ -343,7 +343,7 @@ class ClauseSegmenter(object):
 
         def complex_that(match):
             tokens = list(match[1][0].iter_terminals())
-            return (match_(tokens, ('Dadurch', 'Dafür', 'Dafuer')) or
+            return (match_(tokens, ('Dadurch', u'Dafür', 'Dafuer')) or
                     match_(tokens, 'Aufgrund', 'dessen') or
                     match_(tokens, 'Auf', 'Grund', 'dessen'))
 

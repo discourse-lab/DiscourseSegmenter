@@ -339,38 +339,38 @@ class Tree(object):
                 for terminal in child.iter_terminals():
                     yield terminal
 
-    def pretty_print(self, stream=sys.stdout, depth=0, indent='    ',
-                     term_print=lambda term: u'{form}/{pos}'.format(form=term['form'], \
+    def pretty_print(self, a_stream=sys.stdout, a_depth=0, a_indent='    ',
+                     a_term_print=lambda term: u'{form}/{pos}'.format(form=term['form'], \
                                                                         pos=term['pos']),
-                     feat_print=lambda feat: u'{0}={1}'.format(feat[0], feat[1]),
-                     encoding='utf-8'):
+                     a_feat_print=lambda feat: u'{0}={1}'.format(feat[0], feat[1]),
+                     a_encoding='utf-8'):
         """
         Output nice string representation of the current tree
 
-        @param stream - output stream to be used
-        @param depth - nestedness level of the current tree from the root
-        @param indent - checrater to be used for indentation
-        @param term_print - cutom function for outputting terminals
-        @param feat_print - cutom function for outputting features
-        @param encoding - encoding for the final output string
+        @param a_stream - output stream to be used
+        @param a_depth - nestedness level of the current tree from the root
+        @param a_indent - checrater to be used for indentation
+        @param a_term_print - cutom function for outputting terminals
+        @param a_feat_print - cutom function for outputting features
+        @param a_encoding - encoding for the final output string
 
         @return \c void
         """
-        emit = lambda out: stream.write('{0}{1}'.format(indent * depth, out))
+        emit = lambda out: a_stream.write('{0}{1}'.format(a_indent * a_depth, out))
         if self.feats:
-            feat_str = ','.join(feat_print(item)
+            feat_str = ','.join(a_feat_print(item)
                                 for item in self.feats.iteritems())
-            emit('({0} [{1}]\n'.format(self.label, feat_str.encode(encoding)))
+            emit('({0} [{1}]\n'.format(self.label, feat_str.encode(a_encoding)))
         else:
             emit('({0}\n'.format(self.label))
         for child in self:
             if hasattr(child, 'pretty_print'):
-                child.pretty_print(stream=stream, depth=depth + 1,
-                                   indent=indent, term_print=term_print,
-                                   feat_print=feat_print, encoding='utf-8')
+                child.pretty_print(a_stream = a_stream, a_depth = a_depth + 1,
+                                   a_indent = a_indent, a_term_print = a_term_print,
+                                   a_feat_print = a_feat_print, a_encoding = a_encoding)
             else:
-                emit('{0}{1}\n'.format(indent,
-                                       term_print(child).encode(encoding)))
+                emit('{0}{1}\n'.format(a_indent,
+                                       a_term_print(child).encode(a_encoding)))
         emit(')\n')
 
     def __str__(self):
@@ -635,6 +635,7 @@ class FiniteStateParser(object):
                         except Exception as exc:
                             flag = False
                             warnings.warn('Exception in constraint: {0}'.format(lhs, exc))
+                            raise
                         if not flag:
                             continue
                     feats = spec['feats']
