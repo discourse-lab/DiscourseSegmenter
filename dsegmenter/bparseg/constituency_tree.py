@@ -75,12 +75,11 @@ class CTree(Tree):
     """
 
     @classmethod
-    def parse_lines(cls, a_lines, a_encoding = ENCODING, a_one_per_line = False):
+    def parse_lines(cls, a_lines, a_one_per_line = False):
         """
         Parse input lines and return list of BitPar trees.
 
-        @param a_fname - name of the input file
-        @param a_encoding - input file encoding
+        @param a_lines - decoded lines of the input file
         @param a_one_per_line - flag oindicating whether file is in one
                          sentence per line format
 

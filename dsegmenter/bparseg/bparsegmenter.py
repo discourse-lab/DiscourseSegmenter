@@ -38,7 +38,7 @@ from constants import ENCODING
 from constituency_tree import Tree, CTree
 from ..treeseg import TreeSegmenter, DiscourseSegment, CONSTITUENCY, DEFAULT_SEGMENT
 
-from sklearn.cross_validation import KFold
+# from sklearn.cross_validation import KFold
 from sklearn.externals import joblib
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import VarianceThreshold, SelectKBest
@@ -46,17 +46,15 @@ from sklearn.metrics import precision_recall_fscore_support, classification_repo
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, LinearSVC
 
-import argparse
-import codecs
-import glob
 import locale
-import numpy as np
 import os
 import re
 import sys
+import string
 
 ##################################################################
 # Constants
+NONE = "none"
 N_FOLDS = 10
 SUBSTITUTEF = lambda c1, c2: 2 if c1[-1] == c2[-1] else -3
 ESCAPE_QUOTE_RE = re.compile(r"\\+([\"'])")
@@ -103,11 +101,10 @@ def _translate_toks(a_toks, a_translation):
             ret.add(t_tok)
     return frozenset(ret)
 
-def tree2tok(a_cls, a_tree, a_start = 0):
+def tree2tok(a_tree, a_start = 0):
     """
     Create dictionary mapping constituency trees to numbered tokens
 
-    @param a_cls - reference to this class
     @param a_tree - tree to analyze
     @param a_start - starting position of the first token
 
@@ -129,16 +126,15 @@ def tree2tok(a_cls, a_tree, a_start = 0):
             i += 1
     return tr2tk
 
-def read_trees(a_fname, a_one_per_line = False):
+def read_trees(a_lines, a_one_per_line = False):
     """
     Read file and return a list of constituent dictionaries
 
-    @param a_fname - name of file to be read
+    @param a_lines - decoded lines of the input file
 
     @return list of dictionaries mapping tokens to trees and a list of trees
     """
-    ctrees = CTree.parse_file(a_fname, a_encoding = ENCODING, \
-                                  a_one_per_line = a_one_per_line)
+    ctrees = CTree.parse_lines(a_lines, a_one_per_line = a_one_per_line)
     # generate dictionaries mapping trees' yields to trees
     t_cnt = 0
     t2t = None
@@ -157,11 +153,11 @@ def read_trees(a_fname, a_one_per_line = False):
             toks2trees[toks] = [tree]
     return toks2trees, ctrees
 
-def read_segments(a_fname):
+def read_segments(a_lines):
     """
     Read file and return a list of segment dictionaries
 
-    @param a_fname - name of file to be read
+    @param a_lines - decoded lines of the input file
 
     @return dictionary which maps tokens to segments
     """
@@ -173,40 +169,39 @@ def read_segments(a_fname):
     active_tokens = set()
     active_segments = []
     # read segments
-    with codecs.open(a_fname, 'r', ENCODING) as ifile:
-        for iline in ifile:
-            iline = iline.strip()
-            if not iline:
+    for iline in a_lines:
+        iline = iline.strip()
+        if not iline:
+            continue
+        # do some clean-up
+        active_tokens.clear()
+        del atoks[:]
+        del active_segments[:]
+        tokens = iline.split()
+        # establish correspondence between tokens and segments
+        for tok in tokens:
+            if tok[0] == '(' and len(tok) > 1:
+                active_tokens = set(atoks)
+                del atoks[:]
+                for a_s in active_segments:
+                    segs2toks[a_s].update(active_tokens)
+                new_seg = (s_c, tok[1:])
+                active_segments.append(new_seg)
+                segs2toks[new_seg] = set()
+                s_c += 1
                 continue
-            # do some clean-up
-            active_tokens.clear()
-            del atoks[:]
-            del active_segments[:]
-            tokens = iline.split()
-            # establish correspondence between tokens and segments
-            for tok in tokens:
-                if tok[0] == '(' and len(tok) > 1:
-                    active_tokens = set(atoks)
-                    del atoks[:]
-                    for a_s in active_segments:
-                        segs2toks[a_s].update(active_tokens)
-                    new_seg = (s_c, tok[1:])
-                    active_segments.append(new_seg)
-                    segs2toks[new_seg] = set()
-                    s_c += 1
-                    continue
-                elif tok == ')':
-                    assert active_segments, "Unbalanced closing parenthesis at line: " + repr(iline)
-                    active_tokens = set(atoks)
-                    del atoks[:]
-                    for a_s in active_segments:
-                        segs2toks[a_s].update(active_tokens)
-                    active_segments.pop()
-                    continue
-                else:
-                    atoks.append((t_c, tok))
-                    t_c += 1
-            assert not active_segments, "Unbalanced opening parenthesis at line: " + repr(iline)
+            elif tok == ')':
+                assert active_segments, "Unbalanced closing parenthesis at line: " + repr(iline)
+                active_tokens = set(atoks)
+                del atoks[:]
+                for a_s in active_segments:
+                    segs2toks[a_s].update(active_tokens)
+                active_segments.pop()
+                continue
+            else:
+                atoks.append((t_c, tok))
+                t_c += 1
+        assert not active_segments, "Unbalanced opening parenthesis at line: " + repr(iline)
     toks2segs = dict()
     segments = segs2toks.keys()
     segments.sort(key = lambda el: el[0])
@@ -328,7 +323,7 @@ def classify(a_classifier, a_featgen, a_el, a_default = None):
     @return assigned class
     """
     prediction = a_classifier.predict(a_featgen(a_el))[0]
-    return a_default if prediction.lower() == "none" else prediction
+    return a_default if prediction.lower() == NONE else prediction
 
 ##################################################################
 # Class
@@ -351,7 +346,6 @@ class BparSegmenter(object):
 
     Public instance methods:
     segment - function for doing discourse segmentation on BitPar trees
-    cv_train - train new model in cross-validation mode and pick the best one
     train - train and store new model
     test - evalute model on test data
 
@@ -404,85 +398,85 @@ class BparSegmenter(object):
             seg_idx = len(segments)
         return segments
 
-    def cv_train(self, a_fname2trees, a_fname2segs, a_path, a_model = DEFAULT_PIPELINE, \
-                     a_folds = N_FOLDS, a_out = False, a_out_dir = os.getcwd, a_out_sfx = ""):
-        """
-        Train segmenter model in cross vaidation mode and store it
+    # def cv_train(self, a_fname2trees, a_fname2segs, a_path, a_model = DEFAULT_PIPELINE, \
+    #                  a_folds = N_FOLDS, a_out = False, a_out_dir = os.getcwd, a_out_sfx = ""):
+    #     """
+    #     Train segmenter model in cross vaidation mode and store it
 
-        @param a_fname2trees - dictionary mapping file names to sentence trees
-        @param a_fname2segs - dictionary mapping file names to segments
-        @param a_out - directory for writing output files
-        @param a_out_dir - directory for writing output files
-        @param a_out_sfx - suffix which should be appended to output files
+    #     @param a_fname2trees - dictionary mapping file names to sentence trees
+    #     @param a_fname2segs - dictionary mapping file names to segments
+    #     @param a_out - directory for writing output files
+    #     @param a_out_dir - directory for writing output files
+    #     @param a_out_sfx - suffix which should be appended to output files
 
-        @return \c 3-tuple containing list of macro F-scores, micro
-        F-scores, number of best fold
-        """
-        assert len(a_fname2trees) == len(a_fname2segs), \
-            "Unmatching number of files with trees and segments."
-        # estimate number of folds
-        a_folds = min(len(a_fname2trees), a_folds)
-        folds = KFold(len(a_fname2trees), a_folds)
-        # generate features for trees
-        fname2feats = {fname: [self.featgen(t) for t in trees] \
-                           for fname, trees in a_fname2trees.iteritems()}
+    #     @return \c 3-tuple containing list of macro F-scores, micro
+    #     F-scores, number of best fold
+    #     """
+    #     assert len(a_fname2trees) == len(a_fname2segs), \
+    #         "Unmatching number of files with trees and segments."
+    #     # estimate number of folds
+    #     a_folds = min(len(a_fname2trees), a_folds)
+    #     folds = KFold(len(a_fname2trees), a_folds)
+    #     # generate features for trees
+    #     fname2feats = {fname: [self.featgen(t) for t in trees] \
+    #                        for fname, trees in a_fname2trees.iteritems()}
 
-        best_i = -1
-        pred_segs = []
-        pipeline = None
-        test_fname = ""
-        out_fname = ""
-        out_fnames = []
-        istart = ilen = 0
-        trees = []
-        fname2range = {}
-        processed_fnames = {}
-        best_macro_f1 = float("-inf")
-        macro_f1 = 0; macro_F1s = []
-        micro_f1 = 0; micro_F1s = []
-        train_segs = test_segs = None
-        train_feats = test_feats = None
-        for i, (train, test) in enumerate(folds):
-            print >> sys.stderr, "Fold: {:d}".format(i)
-            train_feats = [feat for k in train for feat in fname2feats[fnames[k]]]
-            train_segs = [str(seg) for k in train for seg in a_fname2segs[fnames[k]]]
-            istart = 0
-            for k in test:
-                ilen = len(fname2featseg[fnames[k]])
-                fname2range[fnames[k]] = [istart, istart + ilen]
-                istart += ilen
-            test_feats = [feat for k in test for feat in fname2feats[fnames[k]]]
-            test_segs = [str(seg) for k in test for seg in a_fname2segs[fnames[k]]]
-            # train classifier
-            a_model.fit(train_feats, train_segs)
-            # obtain new predictions
-            pred_segs = a_model.predict(test_feats)
-            # update F1 scores
-            _, _, macro_f1, _ = precision_recall_fscore_support(test_segs, pred_segs, average='macro', \
-                                                                    pos_label=None)
-            _, _, micro_f1, _ = precision_recall_fscore_support(test_segs, pred_segs, average='micro', \
-                                                                    pos_label=None)
-            macro_F1s.append(macro_f1); micro_F1s.append(micro_f1)
-            print >> sys.stderr, "Macro F1: {:.2%}".format(macro_f1)
-            print >> sys.stderr, "Micro F1: {:.2%}".format(micro_f1)
-            # update maximum macro F-score and store the most successful model
-            if macro_f1 > best_macro_f1:
-                best_i = i
-                best_macro_f1 = macro_f1
-                joblib.dump(a_model, a_path)
-            # generate new output files, if necessary
-            if a_output:
-                for k in test:
-                    test_fname = fnames[k]
-                    if test_fname in processed_fnames and processed_fnames[test_fname] > macro_f1:
-                        continue
-                    processed_fnames[test_fname] = macro_f1
-                    trees.append(a_fname2trees[test_fname])
-                    out_fname = os.path.join(a_out_dir, os.path.splitext(test_fname)[0] + a_out_sfx)
-                    out_fnames.append(out_fname)
-                bpar_segmenter_segment(pipeline, featgen, trees, out_fnames)
-                del trees[:]; del out_fnames[:]; fname2range.clear()
-        return (macro_F1s, micro_F1s, best_i)
+    #     best_i = -1
+    #     pred_segs = []
+    #     pipeline = None
+    #     test_fname = ""
+    #     out_fname = ""
+    #     out_fnames = []
+    #     istart = ilen = 0
+    #     trees = []
+    #     fname2range = {}
+    #     processed_fnames = {}
+    #     best_macro_f1 = float("-inf")
+    #     macro_f1 = 0; macro_F1s = []
+    #     micro_f1 = 0; micro_F1s = []
+    #     train_segs = test_segs = None
+    #     train_feats = test_feats = None
+    #     for i, (train, test) in enumerate(folds):
+    #         print >> sys.stderr, "Fold: {:d}".format(i)
+    #         train_feats = [feat for k in train for feat in fname2feats[fnames[k]]]
+    #         train_segs = [str(seg) for k in train for seg in a_fname2segs[fnames[k]]]
+    #         istart = 0
+    #         for k in test:
+    #             ilen = len(fname2featseg[fnames[k]])
+    #             fname2range[fnames[k]] = [istart, istart + ilen]
+    #             istart += ilen
+    #         test_feats = [feat for k in test for feat in fname2feats[fnames[k]]]
+    #         test_segs = [str(seg) for k in test for seg in a_fname2segs[fnames[k]]]
+    #         # train classifier
+    #         a_model.fit(train_feats, train_segs)
+    #         # obtain new predictions
+    #         pred_segs = a_model.predict(test_feats)
+    #         # update F1 scores
+    #         _, _, macro_f1, _ = precision_recall_fscore_support(test_segs, pred_segs, average = 'macro', \
+    #                                                                 class_weight = 'auto')
+    #         _, _, micro_f1, _ = precision_recall_fscore_support(test_segs, pred_segs, average = 'micro', \
+    #                                                                 class_weight = 'auto')
+    #         macro_F1s.append(macro_f1); micro_F1s.append(micro_f1)
+    #         print >> sys.stderr, "Macro F1: {:.2%}".format(macro_f1)
+    #         print >> sys.stderr, "Micro F1: {:.2%}".format(micro_f1)
+    #         # update maximum macro F-score and store the most successful model
+    #         if macro_f1 > best_macro_f1:
+    #             best_i = i
+    #             best_macro_f1 = macro_f1
+    #             joblib.dump(a_model, a_path)
+    #         # generate new output files, if necessary
+    #         if a_output:
+    #             for k in test:
+    #                 test_fname = fnames[k]
+    #                 if test_fname in processed_fnames and processed_fnames[test_fname] > macro_f1:
+    #                     continue
+    #                 processed_fnames[test_fname] = macro_f1
+    #                 trees.append(a_fname2trees[test_fname])
+    #                 out_fname = os.path.join(a_out_dir, os.path.splitext(test_fname)[0] + a_out_sfx)
+    #                 out_fnames.append(out_fname)
+    #             bpar_segmenter_segment(pipeline, featgen, trees, out_fnames)
+    #             del trees[:]; del out_fnames[:]; fname2range.clear()
+    #     return (macro_F1s, micro_F1s, best_i)
 
     def train(self, a_trees, a_segs, a_path, a_model = DEFAULT_PIPELINE):
         """
@@ -513,13 +507,12 @@ class BparSegmenter(object):
         """
         if self.model is None:
             return (0, 0)
-        segments = []
-        for itree in a_trees:
-            segments += self.model.predict(itree)
+        segments = [self.model.predict(self.featgen(itree))[0] for itree in a_trees]
+        a_segments = [NONE if s is None else s for s in a_segments]
         _, _, macro_f1, _ = precision_recall_fscore_support(a_segments, segments, average='macro', \
-                                                                    pos_label=None)
+                                                                warn_for = ())
         _, _, micro_f1, _ = precision_recall_fscore_support(a_segments, segments, average='micro', \
-                                                                    pos_label=None)
+                                                                warn_for = ())
         return (macro_f1, micro_f1)
 
     def _train(self, a_feats, a_segs, a_model):

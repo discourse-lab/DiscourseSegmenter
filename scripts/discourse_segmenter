@@ -13,12 +13,16 @@ discourse_segmenter [GLOBAL_OPTIONS] type [TYPE_SPECIFIC_OPTIONS] [FILEs]
 
 ##################################################################
 # Imports
-from dsegmenter.bparseg import BparSegmenter, CTree
+from dsegmenter.bparseg import BparSegmenter, CTree, read_trees, read_segments, \
+    trees2segs
 from dsegmenter.edseg import EDSSegmenter, CONLL
 
 import argparse
 import codecs
+import glob
 import sys
+import os
+import re
 
 ##################################################################
 # Constants and Variables
@@ -76,6 +80,57 @@ def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
                         print line.encode(a_encoding)
                     else:
                         yield line.rstrip()
+
+def _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx):
+    """
+    Align BitPar and segment files in two directories
+
+    @param a_bpar_dir - directory containing files with BitPar trees
+    @param a_seg_dir - directory containing files with discourse segments
+    @param a_bpar_sfx - suffix of the names of BitPar files
+    @param a_seg_sfx - suffix of the names of segmentation files
+
+    @return iterator over list of 2-tuples with BitPar and segment file
+    """
+    segf = ""; basefname = "";
+    BP_SFX_RE = re.compile(re.escape(a_bpar_sfx))
+    bpar_files = glob.iglob(os.path.join(a_bpar_dir, '*' + a_bpar_sfx))
+    for bpf in bpar_files:
+        basefname = BP_SFX_RE.sub("", os.path.basename(bpf))
+        segf = os.path.join(a_seg_dir, basefname + a_seg_sfx)
+        if os.path.isfile(segf) and os.access(segf, os.R_OK):
+            yield (bpf, segf)
+        else:
+            print >> sys.stderr, \
+                "WARNING: No counterpart file found for BitPar file '{:s}'.".format(bpf)
+
+def _read_trees_segments(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx, \
+                             a_encoding = DEFAULT_ENCODING):
+    """
+    Read input files containing discourse segments and BitPar trees
+
+    @param a_bpar_dir - directory containing files with BitPar trees
+    @param a_seg_dir - directory containing files with discourse segments
+    @param a_bpar_sfx - suffix of the names of BitPar files
+    @param a_seg_sfx - suffix of the names of segmentation files
+    @param a_encoding - text encoding used for input/output
+
+    @return 2-tuple with a list of segments and a list of trees
+    """
+    trees = []; segments = []
+    tree2seg = {}; toks2trees = {}; toks2segs = {};
+    bpar_seg_files = _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx)
+    # do tree/segment alignment
+    for bpf, segf in bpar_seg_files:
+        with codecs.open(bpf, 'r', encoding = a_encoding) as ibpf:
+            toks2trees, _ = read_trees(ibpf)
+        with codecs.open(segf, 'r', encoding = a_encoding) as isegf:
+            toks2segs = read_segments(isegf)
+        tree2seg = trees2segs(toks2trees, toks2segs)
+        for t, s in tree2seg.iteritems():
+            trees.append(t)
+            segments.append(s)
+    return (trees, segments)
 
 def _output_segment_forrest(a_forrest, a_segmenter, a_output, a_encoding):
     """
@@ -140,6 +195,33 @@ def bparseg_segment(a_segmenter, a_ilines, a_encoding = DEFAULT_ENCODING):
         segments = a_segmenter.segment([ctree])
         print u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding)
 
+def bparseg_test(a_segmenter, a_trees, a_segments):
+    """
+    Evaluate performance of segment classification
+
+    @param a_segmenter - pointer to BitPar segmenter
+    @param a_trees - list of BitPar trees
+    @param a_segments - list of discourse segments corresponding to BitPar trees
+
+    @return \c void
+    """
+    macro_f1, micro_f1 = a_segmenter.test(a_trees, a_segments)
+    print >> sys.stderr, "Macro F1-score: {:.2%}".format(macro_f1)
+    print >> sys.stderr, "Micro F1-score: {:.2%}".format(micro_f1)
+
+def bparseg_train(a_segmenter, a_trees, a_segments, a_path):
+    """
+    Evaluate performance of segment classification
+
+    @param a_segmenter - pointer to BitPar segmenter
+    @param a_trees - list of BitPar constituency trees
+    @param a_segments - list of discourse segments corresponding to trees
+    @param a_path - path in which to store the model
+
+    @return \c void
+    """
+    a_segmenter.train(a_trees, a_segments, a_path)
+
 def main(argv):
     """
     Read input text and segment it into elementary discourse units.
@@ -156,8 +238,7 @@ into elementary discourse units.""")
     parser.add_argument("-e", "--encoding", help = "input encoding of text", nargs = 1, \
                             type = str, default = DEFAULT_ENCODING)
     parser.add_argument("-s", "--skip-line", help = """lines which should be ignored during the
-processing and output without changes (defaults to empty lines)""", nargs = 1, type = str, \
-                            default = "")
+processing and output without changes (defaults to empty lines)""", type = str, default = "")
 
     # add type-specific subparsers
     subparsers = parser.add_subparsers(help="type of discourse segmenter to use", dest = "dtype")
@@ -177,13 +258,13 @@ processing and output without changes (defaults to empty lines)""", nargs = 1, t
  and segment files""")
     parser_bpar_train.add_argument("--cross-validate", help = "train model in cross-validation mode")
     parser_bpar_train.add_argument("model", help = "path to file in which to store the trained model", \
-                                       type = str, default = BparSegmenter.DEFAULT_MODEL)
+                                       type = str)
     _set_train_test_args(parser_bpar_train)
 
     parser_bpar_test = bpar_subparsers.add_parser(TEST, help = """test model on BitPar
  and segment files""")
     parser_bpar_test.add_argument("-m", "--model", help = "path to file containing model", \
-                                         type = str, default = "")
+                                         type = str, default = BparSegmenter.DEFAULT_MODEL)
     _set_train_test_args(parser_bpar_test)
 
     parser_bpar_segment = bpar_subparsers.add_parser(SEGMENT, help = """split BitPar trees\
@@ -199,16 +280,33 @@ processing and output without changes (defaults to empty lines)""", nargs = 1, t
     if hasattr(args, "files"):
         ifiles = _read_files(args.files, args.encoding, args.skip_line)
 
+    # process input with edseg
     if args.dtype == EDSEG:
         edseg_segment(ifiles, args.output_trees)
+    # process input with bparseg
     else:
         if args.mode == TRAIN:
-            bparseg_train()
-        elif args.mode == TEST:
-            bparseg_test()
+            mdir = os.path.dirname(args.model)
+            if mdir == '':
+                pass
+            elif os.path.exists(mdir):
+                if not os.path.isdir(mdir) or not os.access(mdir, os.R_OK):
+                    puts >> sys.stderr, "Can't write to directory '{:s}'.".format(mdir)
+            else:
+                os.makedirs(mdir)
+            trees, segments = _read_trees_segments(args.bpar_dir, args.seg_dir, args.bpar_sfx, \
+                                                       args.seg_sfx, args.encoding)
+            bparseg_train(trees, segments, args.model)
         else:
+            assert os.path.exists(args.model) and os.path.isfile(args.model) and \
+                os.access(args.model, os.R_OK), "Can't read model file '{:s}'.".format(args.model)
             segmenter = BparSegmenter(a_model = args.model)
-            bparseg_segment(segmenter, ifiles, args.encoding)
+            if args.mode == TEST:
+                trees, segments = _read_trees_segments(args.bpar_dir, args.seg_dir, args.bpar_sfx, \
+                                                           args.seg_sfx, args.encoding)
+                bparseg_test(segmenter, trees, segments)
+            else:
+                bparseg_segment(segmenter, ifiles, args.encoding)
 
 ##################################################################
 # Main
