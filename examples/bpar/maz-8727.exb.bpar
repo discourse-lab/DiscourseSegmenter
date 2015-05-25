@@ -1,0 +1,328 @@
+
+(TOP
+  (S-TOP
+    (NP-SB\/Sg
+      (PPER-HD-Nom.Sg.Neut Es))
+    (VAFIN-HD-Sg ist)
+    (ADJD-PD-Pos\/V bewundernswert)
+    (\$, ,)
+    (S-RE
+      (AP-MO\/pred
+        (PWAV-MO wie)
+        (ADJD-HD-Pos\/0 beharrlich))
+      (NP-SB\/Pl
+        (ART-HD-Nom.Pl.Masc die)
+        (NN-HD-Nom.Pl.Masc Initiatoren)
+        (NP-AG
+          (ART-HD-Gen.Sg.Fem der)
+          (NN-HD-Gen.Sg.Fem Bücherstadt)))
+      (PN-DA-Dat.Sg.Neut
+        (NE-HD-Dat.Sg.Neut Wünsdorf))
+      (NP-OA
+        (PPOSAT-HD-Acc.Sg.Neut ihr)
+        (NN-HD-Acc.Sg.Neut Konzept))
+      (VVFIN-HD-Pl verfolgen)))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (NP-SB\/Sg
+      (ART-HD-Nom.Sg.Fem Die)
+      (NN-HD-Nom.Sg.Fem Basis))
+    (VAFIN-HD-Sg ist)
+    (VP-OC\/pp
+      (PP-MO\/V
+        (APPR-AC\/Dat mit)
+        (ART-HD-Dat.Sg.Masc einem)
+        (ADJA-HD-Pos.Dat.Sg.Masc festen)
+        (NN-HD-Dat.Sg.Masc Stamm))
+      (PP-MO\/V
+        (APPR-AC\/Dat an)
+        (NN-HD-Dat.Pl.Masc Antiquaren))
+      (VVPP-HD geschaffen)))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (NP-EP
+      (PPER-HD-Nom.Sg.Neut\/ep Es))
+    (VVFIN-HD-Sg gibt)
+    (CNP-OA
+      (NP-OA\/chain
+        (NN-HD-Acc.Sg.Fem Gastronomie))
+      (KON-CD und)
+      (NP-OA\/chain
+        (NN-HD-Acc.Pl.Fem Bunkerführungen)))
+    (AVP-MO\/V
+      (ADV-HD\/V ebenso)
+      (NP-CC
+        (KOKOM-CM wie)
+        (CNP-HD
+          (NN-HD-Nom.Pl.Neut Museen)
+          (KON-CD und)
+          (NP-HD
+            (ADJA-HD-Pos.Acc.Pl.Fem diverse)
+            (NN-HD-Acc.Pl.Fem Veranstaltungen))))))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (ADV-MO\/V Inzwischen)
+    (VAFIN-HD-Sg hat)
+    (PRF-OA-Acc.Sg sich)
+    (NP-SB\/Sg
+      (ART-HD-Nom.Sg.Fem die)
+      (NN-HD-Nom.Sg.Fem Bücherstadt))
+    (VP-OC\/pp
+      (NP-OA
+        (ART-HD-Acc.Sg.Masc einen)
+        (NN-HD-Acc.Sg.Masc Namen))
+      (VVPP-HD gemacht)))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (KON-JU Und)
+    (VAFIN-HD-Sg wird)
+    (ADV-MO\/V hoffentlich)
+    (AVP-NG\/V
+      (PTKNEG-HD nicht)
+      (ADV-MO\/V mehr))
+    (ADJD-MO-Pos\/V kleinzukriegen)
+    (NP-OA
+      (PPOSAT-HD-Acc.Sg.Neut sein)
+      (\$Par -)
+      (PP-MNR\/N
+        (APPR-AC trotz)
+        (CNP-HD
+          (NP-HD
+            (ART-HD-Dat.Sg.Fem der)
+            (NN-HD-Dat.Sg.Fem Pleite)
+            (NP-AG
+              (ART-HD-Gen.Sg.Fem der)
+              (NN-HD-Gen.Sg.Fem Landesentwicklungsgesellschaft))
+            (\$Par -OP-)
+            (PN-APP-Nom.Sg.Fem
+              (NE-HD-Nom.Sg.Fem LEG))
+            (\$Par -CP-))
+          (KON-CD und)
+          (NP-HD
+            (ADJA-HD-Pos.Gen.Sg.Masc gelegentlichen)
+            (NN-HD-Gen.Sg.Masc Jammerns)))))
+    (PP-MO\/V
+      (APPR-AC\/Dat\/in in)
+      (ART-HD-Dat.Pl.Fem den)
+      (ADJA-HD-Pos.Dat.Pl.Fem eigenen)
+      (NN-HD-Dat.Pl.Fem Reihen)))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (PP-MO\/V
+      (APPR-AC\/Dat Mit)
+      (ART-HD-Dat.Sg.Masc dem)
+      (ADJA-HD-Pos.Dat.Sg.Masc gestrigen)
+      (NN-HD-Dat.Sg.Masc Umwelttag))
+    (VAFIN-HD-Sg ist)
+    (NP-SB\/Sg
+      (ART-HD-Nom.Sg.Masc ein)
+      (AP-HD-Pos.Nom.Sg.Masc
+        (ADV-MO\/0 zunächst)
+        (ADJD-MO-Pos\/0 ungewöhnlich)
+        (ADJA-HD-Pos.Nom.Sg.Masc scheinender))
+      (NN-HD-Nom.Sg.Masc Schritt))
+    (VP-OC\/pp
+      (VP-OC\/pp
+        (VVPP-HD getan))
+      (VAPP-HD worden)))
+  (\$. .))
+
+(TOP
+  (S-TOP\/nohead
+    (KON-JU Doch)
+    (NP-SB\/Pl
+      (PIAT-HD-Nom.Pl.Masc solche)
+      (\$Par \")
+      (PN-MNR-Nom.Sg
+        (NE-HD-Nom.Sg Ausrutscher))
+      (\$Par \"))
+    (VP-OC\/pp
+      (NP-OA
+        (S-HD
+          (VAFIN-HD-Pl sind)))
+      (VMPP-HD gewollt)))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (ADV-MO\/V Schließlich)
+    (VVFIN-HD-Pl stellen)
+    (NP-SB\/Pl
+      (ADJA-HD-Pos.Nom.Pl.Neut alte)
+      (NN-HD-Nom.Pl.Neut Bücher))
+    (ADV-MO\/V zwar)
+    (PP-MO\/V
+      (APPR-AC\/Acc für)
+      (ADJA-HD-Pos.Acc.Pl.Fem bestimmte)
+      (NN-HD-Acc.Pl.Fem Zielgruppen))
+    (NP-OA
+      (ART-HD-Acc.Sg.Masc einen)
+      (NN-HD-Acc.Sg.Masc Magneten))
+    (PTKVZ-SVP dar)
+    (\$, ,)
+    (S-PAR\/nohead
+      (ADV-MO\/V doch)
+      (ADV-MO\/V lange)
+      (PTKNEG-NG nicht)
+      (PP-MO\/V
+        (APPR-AC\/Acc für)
+        (PIS-HD-Acc.Pl alle))))
+  (\$. .))
+
+(TOP
+  (CS-TOP
+    (S-TOP
+      (NP-SB\/Pl
+        (NN-HD-Nom.Pl.Masc Zusatzangebote))
+      (VMFIN-HD-Pl müssen)
+      (ADV-MO\/V her))
+    (\$, ,)
+    (KON-CD und)
+    (S-TOP
+      (PN-SB-Nom.Sg
+        (NE-HD-Nom.Sg was))
+      (VVFIN-HD-Sg bietet)
+      (PRF-OA-Acc.Sg sich)
+      (ADV-MO\/V da)
+      (PP-MO\/V
+        (APPR-AC\/Dat\/in in)
+        (ART-HD-Dat.Sg.Fem der)
+        (ADJA-HD-Pos.Dat.Sg.Fem grünen)
+        (NN-HD-Dat.Sg.Fem Waldstadt))
+      (NP-OA
+        (PIS-HD mehr))
+      (PTKVZ-SVP an)
+      (NP-CC
+        (KOKOM-CM als)
+        (ART-HD-Nom.Sg.Fem die)
+        (NN-HD-Nom.Sg.Fem Beschäftigung)
+        (PP-MNR\/N
+          (APPR-AC\/Dat mit)
+          (ART-HD-Dat.Sg.Fem der)
+          (NN-HD-Dat.Sg.Fem Natur)))))
+  (\$. ?))
+
+(TOP
+  (S-TOP
+    (PTKVZ-SVP Hinzu)
+    (VVFIN-HD-Sg kommt)
+    (\$, ,)
+    (S-OC
+      (KOUS-CP\/oc dass)
+      (NP-SB\/Sg
+        (PPER-HD-Nom.Sg.Neut es))
+      (AP-PD\/pred
+        (ADV-MO\/0 allemal)
+        (ADJD-HD-Comp\/0 besser))
+      (VAFIN-HD-Sg ist)
+      (\$, ,)
+      (CVP-RE
+        (VP-RE
+          (NP-OA
+            (PRF-HD-Acc.Sg sich)
+            (PP-MNR\/N
+              (APPR-AC\/Dat\/in in)
+              (FM-HD puncto)
+              (NN-HD-Dat.Sg.Fem Resonanz)))
+          (AP-MO\/pred
+            (PTKNEG-NG nicht)
+            (ADJD-HD-Pos\/0 selbst))
+          (VZ-HD
+            (PTKZU-PM zu)
+            (VVINF-HD belügen)))
+        (\$, ,)
+        (KON-CD sondern)
+        (VP-RE
+          (ADV-MO\/V lieber)
+          (NP-OA
+            (PIS-HD-Neut etwas))
+          (PP-MO\/V
+            (APPR-AC\/Acc für)
+            (PIAT-HD mehr)
+            (NN-HD-Acc.Pl.Masc Besucher))
+          (VZ-HD
+            (PTKZU-PM zu)
+            (VVINF-HD tun))))))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (KON-JU Denn)
+    (S-SB
+      (KOUS-CP\/sb dass)
+      (NP-SB\/Pl
+        (PIAT-HD-Nom.Pl.Fem solche)
+        (NN-HD-Nom.Pl.Fem Lügen))
+      (NP-OA
+        (ADJA-HD-Pos.Acc.Pl.Neut kurze)
+        (NN-HD-Acc.Pl.Neut Beine))
+      (VAFIN-HD-Pl haben))
+    (\$, ,)
+    (VVFIN-HD-Sg musste)
+    (NP-SB\/Sg
+      (ART-HD-Nom.Sg.Fem die)
+      (NE-HD-Nom.Sg.Fem LEG))
+    (VP-OC\/inf
+      (PP-MO\/V
+        (APPR-AC\/Dat\/in in)
+        (PDAT-HD-Dat.Sg.Neut diesem)
+        (NN-HD-Dat.Sg.Neut Jahr))
+      (VVINF-HD erfahren)))
+  (\$. .))
+
+(TOP
+  (S-TOP
+    (NP-SB\/Sg
+      (PPER-HD-Nom.Sg.Fem Sie))
+    (VAFIN-HD-Sg hatte)
+    (PTKVZ-SVP vor)
+    (\$Par -OP-))
+  (\$. !))
+
+(TOP
+  (\$Par -CP-)
+  (S-TOP
+    (NP-DA
+      (ART-HD-Dat.Sg.Fem der)
+      (ADJA-HD-Pos.Dat.Sg.Fem langen)
+      (NN-HD-Dat.Sg.Fem Nacht)
+      (NP-AG
+        (ART-HD-Gen.Sg.Fem der)
+        (NN-HD-Gen.Sg.Fem Antiquare)))
+    (VVFIN-HD-Pl kühn)
+    (NP-SB\/Pl
+      (ART-HD-Nom.Pl.Fem die)
+      (ADJA-HD-Pos 2000er)
+      (NN-HD-Nom.Pl.Fem Besucherzahlen))
+    (VP-OC\/pp
+      (PP-CVC\/V
+        (APPR-AC\/Acc\/in in)
+        (NN-HD-Acc.Sg.Masc Druck))
+      (VVPP-HD gegeben)))
+  (\$. .))
+
+(TOP
+  (S-TOP\/nohead
+    (KON-JU Und)
+    (VP-OC\/pp
+      (PRF-OA-Acc.Sg sich)
+      (PROAV-MO damit)
+      (ADJD-MO-Pos\/V gehörig)
+      (VVPP-HD blamiert)))
+  (\$. .))
+
+(TOP
+  (\$. .))
+
+(TOP
+  (\$. .))
