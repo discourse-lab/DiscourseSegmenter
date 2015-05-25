@@ -1,3 +1,4 @@
+include README.md
 include dsegmenter/bparseg/data/*.model
 include dsegmenter/bparseg/data/*.npy
 include dsegmenter/edseg/data/*.txt
