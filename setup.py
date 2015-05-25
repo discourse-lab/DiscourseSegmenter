@@ -22,13 +22,9 @@ setup(name = "dsegmenter", version = "0.0.1dev1", \
           author_email = "sidarenk@uni-potsdam.de", \
           license = "MIT", \
           url = "https://github.com/WladimirSidorenko/DiscourseSegmenter", \
+          include_package_data = True,
           packages = ["dsegmenter", "dsegmenter.bparseg", "dsegmenter.edseg", \
                           "dsegmenter.treeseg"], \
-          package_data = {"edseg": [path.join("data", fname) for fname in \
-                                        ("dass_verbs.txt", "discourse_preps.txt", \
-                                             "finite_verbs.txt", "reporting_verbs.txt", \
-                                             "skip_rules.txt")], \
-                          "bparseg": glob.iglob(path.join("data", "*.{npy,model}"))}, \
           requires = ["scikit.learn (>=0.15.2)", \
                           "numpy (>=1.9.2)", \
                           "nltk (>=3.0.2)"], \
