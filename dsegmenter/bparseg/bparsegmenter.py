@@ -54,7 +54,7 @@ import string
 
 ##################################################################
 # Constants
-NONE = "none"
+NONE = str(None)
 N_FOLDS = 10
 SUBSTITUTEF = lambda c1, c2: 2 if c1[-1] == c2[-1] else -3
 ESCAPE_QUOTE_RE = re.compile(r"\\+([\"'])")
@@ -323,7 +323,7 @@ def classify(a_classifier, a_featgen, a_el, a_default = None):
     @return assigned class
     """
     prediction = a_classifier.predict(a_featgen(a_el))[0]
-    return a_default if prediction.lower() == NONE else prediction
+    return a_default if prediction is None or prediction == NONE else prediction
 
 ##################################################################
 # Class
@@ -478,23 +478,25 @@ class BparSegmenter(object):
     #             del trees[:]; del out_fnames[:]; fname2range.clear()
     #     return (macro_F1s, micro_F1s, best_i)
 
-    def train(self, a_trees, a_segs, a_path, a_model = DEFAULT_PIPELINE):
+    def train(self, a_trees, a_segs, a_path):
         """
         Train segmenter model
 
         @param a_trees - list of BitPar trees
         @param a_segs - list of discourse segments
         @param a_path - path to file in which the trained model should be stored
-        @param a_model - model object whose parameters should be fit
 
         @return \c void
         """
+        if self.model is None:
+            raise ValueError("Invalid model to train.")
         # generate features
         feats = [self.featgen(t) for t in a_trees]
+        a_segs = [str(s) for s in a_segs]
         # train classifier
-        self._train(feats, a_segs, a_model)
+        self._train(feats, a_segs, self.model)
         # store the model to file
-        joblib.dump(a_model, a_path)
+        joblib.dump(self.model, a_path)
 
     def test(self, a_trees, a_segments):
         """
@@ -508,7 +510,7 @@ class BparSegmenter(object):
         if self.model is None:
             return (0, 0)
         segments = [self.model.predict(self.featgen(itree))[0] for itree in a_trees]
-        a_segments = [NONE if s is None else s for s in a_segments]
+        a_segments = [str(s) for s in a_segments]
         _, _, macro_f1, _ = precision_recall_fscore_support(a_segments, segments, average='macro', \
                                                                 warn_for = ())
         _, _, micro_f1, _ = precision_recall_fscore_support(a_segments, segments, average='micro', \

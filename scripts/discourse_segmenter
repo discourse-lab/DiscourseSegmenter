@@ -191,7 +191,7 @@ def bparseg_segment(a_segmenter, a_ilines, a_encoding = DEFAULT_ENCODING):
     @return \c void
     """
     segments = []
-    for ctree in CTree.parse_lines(a_ilines, a_encoding = ENCODING):
+    for ctree in CTree.parse_lines(a_ilines):
         segments = a_segmenter.segment([ctree])
         print u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding)
 
@@ -294,9 +294,10 @@ processing and output without changes (defaults to empty lines)""", type = str, 
                     puts >> sys.stderr, "Can't write to directory '{:s}'.".format(mdir)
             else:
                 os.makedirs(mdir)
+            segmenter = BparSegmenter()
             trees, segments = _read_trees_segments(args.bpar_dir, args.seg_dir, args.bpar_sfx, \
                                                        args.seg_sfx, args.encoding)
-            bparseg_train(trees, segments, args.model)
+            bparseg_train(segmenter, trees, segments, args.model)
         else:
             assert os.path.exists(args.model) and os.path.isfile(args.model) and \
                 os.access(args.model, os.R_OK), "Can't read model file '{:s}'.".format(args.model)
