@@ -13,7 +13,7 @@ discourse_segmenter [GLOBAL_OPTIONS] type [TYPE_SPECIFIC_OPTIONS] [FILEs]
 
 ##################################################################
 # Imports
-from dsegmenter.bparseg import BparSegmenter
+from dsegmenter.bparseg import BparSegmenter, CTree
 from dsegmenter.edseg import EDSSegmenter, CONLL
 
 import argparse
@@ -26,10 +26,31 @@ DEFAULT_ENCODING = "utf-8"
 ENCODING = DEFAULT_ENCODING
 EDSEG = "edseg"
 BPARSEG = "bparseg"
+TEST = "test"
+TRAIN = "train"
+SEGMENT = "segment"
 Segmenter = None
 
 ##################################################################
 # Methods
+def _set_train_test_args(a_parser):
+    """
+    Add CLI options common to train and test mode to ArgumentParser instance
+
+    @param a_parser - ArgumentParser instance to which new arguments should
+                      be added
+
+    @return \c void
+    """
+    a_parser.add_argument("--bpar-sfx", help = """suffix of the names of BitPar files""", \
+                              type = str, default = "")
+    a_parser.add_argument("--seg-sfx", help = """suffix of the names of segmentation files""", \
+                              type = str, default = "")
+    a_parser.add_argument("bpar_dir", help="directory containing BitPar files", \
+                              type = str)
+    a_parser.add_argument("seg_dir", help="directory containing segmentation files", \
+                              type = str)
+
 def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
     """
     Return iterator over lines of the input file
@@ -41,15 +62,20 @@ def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
     @return iterator over input lines
     """
     if not a_files:
-        a_files = '-'
-
-    for fname in a_files:
-        with codecs.open(fname, encoding = a_encoding) as ifile:
-            for line in ifile:
-                if line == a_skip_line:
-                    print line.encode(a_encoding)
-                else:
-                    yield line.rstrip()
+        for line in sys.stdin:
+            line = line.decode(a_encoding)
+            if line == a_skip_line:
+                print line.encode(a_encoding)
+            else:
+                yield line.rstrip()
+    else:
+        for fname in a_files:
+            with codecs.open(fname, encoding = a_encoding) as ifile:
+                for line in ifile:
+                    if line == a_skip_line:
+                        print line.encode(a_encoding)
+                    else:
+                        yield line.rstrip()
 
 def _output_segment_forrest(a_forrest, a_segmenter, a_output, a_encoding):
     """
@@ -58,7 +84,7 @@ def _output_segment_forrest(a_forrest, a_segmenter, a_output, a_encoding):
     @param a_forrest - pointer to CONLL forrest
     @param a_segmnter - pointer to discourse segmenter
     @param a_output - boolean flag indicating whether dependency trees
-                      should be printed
+    should be printed
     @param a_encoding - text encoding used for output
 
     @return \c void
@@ -79,7 +105,7 @@ def edseg_segment(a_ilines, a_output_trees, a_encoding = DEFAULT_ENCODING):
 
     @param a_ilines - iterator over input lines
     @param a_output_trees - boolean flag indicating whether dependency trees
-                            should be printed
+    should be printed
     @param a_encoding - text encoding used for input/output
 
     @return \c void
@@ -99,6 +125,21 @@ def edseg_segment(a_ilines, a_output_trees, a_encoding = DEFAULT_ENCODING):
     # output remained EDUs
     _output_segment_forrest(forrest, segmenter, a_output_trees, a_encoding)
 
+def bparseg_segment(a_segmenter, a_ilines, a_encoding = DEFAULT_ENCODING):
+    """
+    Perform machine-learning driven segmentation of BitPar constituency trees
+
+    @param a_segmenter - pointer to BitPar segmenter
+    @param a_ilines - iterator over input lines
+    @param a_encoding - text encoding used for input/output
+
+    @return \c void
+    """
+    segments = []
+    for ctree in CTree.parse_lines(a_ilines, a_encoding = ENCODING):
+        segments = a_segmenter.segment([ctree])
+        print u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding)
+
 def main(argv):
     """
     Read input text and segment it into elementary discourse units.
@@ -113,37 +154,61 @@ into elementary discourse units.""")
 
     # define global options
     parser.add_argument("-e", "--encoding", help = "input encoding of text", nargs = 1, \
-                        type = str, default = DEFAULT_ENCODING)
+                            type = str, default = DEFAULT_ENCODING)
     parser.add_argument("-s", "--skip-line", help = """lines which should be ignored during the
 processing and output without changes (defaults to empty lines)""", nargs = 1, type = str, \
-                        default = "")
+                            default = "")
 
     # add type-specific subparsers
     subparsers = parser.add_subparsers(help="type of discourse segmenter to use", dest = "dtype")
 
     # edgseg argument parser
-    parser_edseg = subparsers.add_parser(EDSEG, help = "rule-based discourse segmenter for CONLL dependency trees")
-    parser_edseg.add_argument("-o", "--output-trees", help="output dependency trees along with segments", \
-                                  action = "store_true")
+    parser_edseg = subparsers.add_parser(EDSEG, help = "rule-based discourse segmenter for CONLL\
+ dependency trees")
+    parser_edseg.add_argument("-o", "--output-trees", help="output dependency trees along with\
+ segments", action = "store_true")
     parser_edseg.add_argument("files", help="input files", nargs = '*', metavar="file")
 
     # bpar argument parser
-    parser_bpar = subparsers.add_parser(BPARSEG, help = """machine-learning driven discourse segmenter for\
- BitPar constituency trees""")
-    parser_bpar.add_argument("-m", "--mode", help="select action mode (train, test, or segment)", \
-                                 nargs = 1, type = str, choices = ["train", "test", "segment"], \
-                                 default = "segment")
-    parser_bpar.add_argument("files", help="input files", nargs = '*', metavar="file")
+    parser_bpar = subparsers.add_parser(BPARSEG, help = """machine-learning driven discourse\
+ segmenter for BitPar constituency trees""")
+    bpar_subparsers = parser_bpar.add_subparsers(help = "action to perform", dest = "mode")
+    parser_bpar_train = bpar_subparsers.add_parser(TRAIN, help = """train new model on BitPar
+ and segment files""")
+    parser_bpar_train.add_argument("--cross-validate", help = "train model in cross-validation mode")
+    parser_bpar_train.add_argument("model", help = "path to file in which to store the trained model", \
+                                       type = str, default = BparSegmenter.DEFAULT_MODEL)
+    _set_train_test_args(parser_bpar_train)
+
+    parser_bpar_test = bpar_subparsers.add_parser(TEST, help = """test model on BitPar
+ and segment files""")
+    parser_bpar_test.add_argument("-m", "--model", help = "path to file containing model", \
+                                         type = str, default = "")
+    _set_train_test_args(parser_bpar_test)
+
+    parser_bpar_segment = bpar_subparsers.add_parser(SEGMENT, help = """split BitPar trees\
+ into discourse units""")
+    parser_bpar_segment.add_argument("-m", "--model", help = "path to file containing model", \
+                                         type = str, default = BparSegmenter.DEFAULT_MODEL)
+    parser_bpar_segment.add_argument("files", help="input files", nargs = '*', metavar="file")
+
     args = parser.parse_args()
 
+    # process input files
     ifiles = []
     if hasattr(args, "files"):
         ifiles = _read_files(args.files, args.encoding, args.skip_line)
-    # initialize segmenter
+
     if args.dtype == EDSEG:
         edseg_segment(ifiles, args.output_trees)
     else:
-        pass
+        if args.mode == TRAIN:
+            bparseg_train()
+        elif args.mode == TEST:
+            bparseg_test()
+        else:
+            segmenter = BparSegmenter(a_model = args.model)
+            bparseg_segment(segmenter, ifiles, args.encoding)
 
 ##################################################################
 # Main

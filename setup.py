@@ -5,6 +5,7 @@
 from setuptools import setup
 from os import path
 import codecs
+import glob
 
 ##################################################################
 # Variables and Constants
@@ -27,8 +28,7 @@ setup(name = "dsegmenter", version = "0.0.1dev1", \
                                         ("dass_verbs.txt", "discourse_preps.txt", \
                                              "finite_verbs.txt", "reporting_verbs.txt", \
                                              "skip_rules.txt")], \
-                          "bparseg": [path.join("data", fname) for fname in \
-                                          "bpar.model"]}, \
+                          "bparseg": glob.iglob(path.join("data", "*.{npy,model}"))}, \
           requires = ["scikit.learn (>=0.15.2)", \
                           "numpy (>=1.9.2)", \
                           "nltk (>=3.0.2)"], \

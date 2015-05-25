@@ -17,6 +17,8 @@ tree2tok - create dictionary mapping constituency trees to numbered tokens
 read_trees - read file and return a list of constituent dictionaries
 read_segments - read file and return a list of segment dictionaries
 trees2segs - align trees with corresponding segments
+featgen - default feature generation function
+classify - default classification method
 
 Classes:
 BparSegmenter - discourse segmenter for constituency trees
@@ -271,6 +273,63 @@ def trees2segs(a_toks2trees, a_toks2segs):
                 tree2seg[tree] = segs[-1]
     return tree2seg
 
+def featgen(a_tree):
+    """
+    Generate features for the given BitPar tree.
+
+    @param a_tree - BitPar tree for which we should generate features
+
+    @return list of string features
+    """
+    assert a_tree.leaves(), "Tree does not contain leaves."
+    # add unigram features
+    ret = {u"tok_{:s}".format(token.lower()): 1 for token in a_tree.leaves()}
+    # add very first and very last tokens of the tree
+    ret[u"tokFirst_{:s}".format(a_tree.leaves()[0].lower())] = 1
+    ret[u"tokLast_{:s}".format(a_tree.leaves()[-1].lower())] = 1
+    sublabels = [st.label() for st in a_tree.subtrees()]
+    if sublabels:
+        ret[u"lblFirst_{:s}".format(sublabels[0].lower())] = 1
+        ret[u"lblLast_{:s}".format(sublabels[-1].lower())] = 1
+    # add tree label
+    ret[u"lbl_{:s}".format(a_tree.label())] = 1
+    # add label of the parent tree
+    ret[u"prntLbl_{:s}".format(a_tree.prnt_label())] = 1
+    # add first and last word of the parent tree
+    if a_tree.parent():
+        prnt_tree = a_tree.parent()
+        t_idx = a_tree.parent_index()
+        ret[u"treeIdx"] = t_idx
+        if t_idx > 0:
+            prev_tree = prnt_tree[t_idx - 1]
+            ret[u"prevLbl_{:s}".format(prev_tree.label())] = 1
+            ret[u"prevTokFrst_{:s}".format(prev_tree.leaves()[0].lower())] = 1
+            ret[u"prevTokLst_{:s}".format(prev_tree.leaves()[-1].lower())] = 1
+        if t_idx + 1 < len(prnt_tree):
+            nxt_tree = prnt_tree[t_idx + 1]
+            ret[u"nxtLbl_{:s}".format(nxt_tree.label())] = 1
+            ret[u"pxtTokFrst_{:s}".format(nxt_tree.leaves()[0].lower())] = 1
+            ret[u"pxtTokLst_{:s}".format(nxt_tree.leaves()[-1].lower())] = 1
+    # add tree height
+    ret["height"] = a_tree.height()
+    # add label of the parent tree
+    return ret
+
+def classify(a_classifier, a_featgen, a_el, a_default = None):
+    """
+    Classify given element.
+
+    @param a_classifier - model which should make predictions
+    @param a_featgen - feature generation function
+    @param a_el - constituency tree to be classified
+    @param a_default - default element that should be returned if el does
+                       not yield segment
+
+    @return assigned class
+    """
+    prediction = a_classifier.predict(a_featgen(a_el))[0]
+    return a_default if prediction.lower() == "none" else prediction
+
 ##################################################################
 # Class
 class BparSegmenter(object):
@@ -281,10 +340,6 @@ class BparSegmenter(object):
     DEFAULT_CLASSIFIER - default classification method
     DEFAULT_MODEL - default model to use in classification
     DEFAULT_PIPELINE - default pipeline object used for classification
-
-    Class methods:
-    featgen - default feature generation function
-    classify - default classification method
 
     Instance variables:
     model - path to the model that is used for classification
@@ -307,63 +362,6 @@ class BparSegmenter(object):
     DEFAULT_PIPELINE = Pipeline([('vectorizer', DictVectorizer()),
                          ('var_filter', VarianceThreshold()),
                          ('LinearSVC', DEFAULT_CLASSIFIER)])
-    @classmethod
-    def featgen(a_cls, a_tree):
-        """
-        Generate features for the given BitPar tree.
-
-        @param a_cls - reference to this class
-        @param a_tree - BitPar tree for which we should generate features
-
-        @return list of string features
-        """
-        assert a_tree.leaves(), "Tree does not contain leaves."
-        # add unigram features
-        ret = {u"tok_{:s}".format(token.lower()): 1 for token in a_tree.leaves()}
-        # add very first and very last tokens of the tree
-        ret[u"tokFirst_{:s}".format(a_tree.leaves()[0].lower())] = 1
-        ret[u"tokLast_{:s}".format(a_tree.leaves()[-1].lower())] = 1
-        sublabels = [st.label() for st in a_tree.subtrees()]
-        if sublabels:
-            ret[u"lblFirst_{:s}".format(sublabels[0].lower())] = 1
-            ret[u"lblLast_{:s}".format(sublabels[-1].lower())] = 1
-        # add tree label
-        ret[u"lbl_{:s}".format(a_tree.label())] = 1
-        # add label of the parent tree
-        ret[u"prntLbl_{:s}".format(a_tree.prnt_label())] = 1
-        # add first and last word of the parent tree
-        if a_tree.parent():
-            prnt_tree = a_tree.parent()
-            t_idx = a_tree.parent_index()
-            ret[u"treeIdx"] = t_idx
-            if t_idx > 0:
-                prev_tree = prnt_tree[t_idx - 1]
-                ret[u"prevLbl_{:s}".format(prev_tree.label())] = 1
-                ret[u"prevTokFrst_{:s}".format(prev_tree.leaves()[0].lower())] = 1
-                ret[u"prevTokLst_{:s}".format(prev_tree.leaves()[-1].lower())] = 1
-            if t_idx + 1 < len(prnt_tree):
-                nxt_tree = prnt_tree[t_idx + 1]
-                ret[u"nxtLbl_{:s}".format(nxt_tree.label())] = 1
-                ret[u"pxtTokFrst_{:s}".format(nxt_tree.leaves()[0].lower())] = 1
-                ret[u"pxtTokLst_{:s}".format(nxt_tree.leaves()[-1].lower())] = 1
-        # add tree height
-        ret["height"] = a_tree.height()
-        # add label of the parent tree
-        return ret
-
-    @classmethod
-    def classify(a_cls, a_classifier, a_el, a_default = None):
-        """
-        Classify given element.
-
-        @param a_cls - reference to this class
-        @param a_classifier - model whch should make predictions
-        @param a_el - constituency tree to be classified
-
-        @return assigned class
-        """
-        prediction = a_classifier.predict(featgen(a_el))[0]
-        return a_default if prediction.lower() == "none" else prediction
 
     def __init__(self, a_featgen = featgen, a_classify = classify, \
                      a_model = DEFAULT_MODEL):
@@ -390,16 +388,19 @@ class BparSegmenter(object):
         """
         seg_idx = 0
         segments = []
+        isegment = None
         if self.model is None:
             return [DiscourseSegment(a_name = DEFAULT_SEGMENT, a_leaves = t.leaves) \
                         for t in a_trees]
-        for t in trees:
-            self._segmenter.segment(self.featgen(t), segments)
+        for t in a_trees:
+            self._segmenter.segment(t, segments)
             # if classifier failed to create one common segment for
             # the whole tree, create one for it
-            if (len(segments) - seg_idx) > 1:
-                segments[seg_idx:] = [DiscourseSegment(a_name = DEFAULT_SEGMENT, \
-                                                           a_leaves = segments[seg_idx:])]
+            if (len(segments) - seg_idx) > 1 or \
+                    (len(segments) and not isinstance(segments[-1][-1], DiscourseSegment)):
+                isegment = DiscourseSegment(a_name = DEFAULT_SEGMENT, \
+                                                a_leaves = segments[seg_idx:])
+                segments[seg_idx:] = [(isegment.leaves[0][0], isegment)]
             seg_idx = len(segments)
         return segments
 
@@ -545,13 +546,14 @@ class BparSegmenter(object):
         """
         if a_model is None:
             self.model = a_model
-            self.decfunc = lambda el: self.classify(self.model, el)
+            self.decfunc = lambda el: None
             self._segmenter = TreeSegmenter(a_decfunc = self.decfunc, a_type = CONSTITUENCY)
+            return
         elif isinstance(a_model, basestring):
             if not os.path.isfile(a_model) or not os.access(a_model, os.R_OK):
                 raise RuntimeError("Can't create model from file {:s}".format(a_model))
             self.model = joblib.load(a_model)
         else:
             self.model = a_model
-        self.decfunc = lambda el: self.classify(self.model, el)
+        self.decfunc = lambda el: self.classify(self.model, self.featgen, el)
         self._segmenter = TreeSegmenter(a_decfunc = self.decfunc, a_type = CONSTITUENCY)

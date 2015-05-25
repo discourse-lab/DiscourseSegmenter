@@ -15,8 +15,9 @@ CTree - interface for handling constituency trees
 
 ##################################################################
 # Imports
-from constants import NO_PARSE_RE, WORD_SEP
+from constants import NO_PARSE_RE, WORD_SEP, ENCODING
 
+import codecs
 import nltk.tree
 import nltk
 import sys
@@ -69,46 +70,46 @@ class CTree(Tree):
     This class subclasses the Tree class.
 
     This class extends its parent by one additional public class method:
-    parse_file - parse input file and return list of constituency trees
+    parse_lines - parse input lines and return list of constituency trees
 
     """
 
     @classmethod
-    def parse_file(cls, a_fname, a_encoding = "utf-8", a_one_per_line = False):
+    def parse_lines(cls, a_lines, a_encoding = ENCODING, a_one_per_line = False):
         """
-        Parse input file and return list of BitPar trees.
+        Parse input lines and return list of BitPar trees.
 
         @param a_fname - name of the input file
         @param a_encoding - input file encoding
         @param a_one_per_line - flag oindicating whether file is in one
                          sentence per line format
 
-        @return list of constituency trees
+        @return iterator over constituency trees
         """
-        ret = []
         lines = []
+        itree = None
         imatch = None
-        with open(a_fname) as ifile:
-            for iline in ifile:
-                iline = iline.decode(a_encoding).strip()
-                imatch = NO_PARSE_RE.match(iline)
-                if imatch or not iline:
-                    if lines:
-                        ret.append(Tree.fromstring(u'\t'.join(lines)))
-                        del lines[:]
-                    if imatch:
-                        ret.append(Tree("TOP", imatch.group(1).split()))
+        for iline in a_lines:
+            iline = iline.strip()
+            imatch = NO_PARSE_RE.match(iline)
+            if imatch or not iline:
+                if lines:
+                    yield Tree.fromstring(u'\t'.join(lines))
+                    del lines[:]
+                if imatch:
+                    yield Tree("TOP", imatch.group(1).split())
+            else:
+                if a_one_per_line:
+                    try:
+                        itree = Tree.fromstring(iline)
+                        yield itree
+                    except ValueError:
+                        for seg in cls._get_segments(iline):
+                            yield Tree.fromstring(seg)
                 else:
-                    if a_one_per_line:
-                        try:
-                            ret.append(Tree.fromstring(iline))
-                        except ValueError:
-                            ret.append([Tree.fromstring(seg) for seg in cls._get_segments(iline)])
-                    else:
-                        lines.append(iline)
-            if lines:
-                ret.append(Tree.fromstring(u'\t'.join(lines)))
-        return ret
+                    lines.append(iline)
+        if lines:
+            yield Tree.fromstring(u'\t'.join(lines))
 
     @classmethod
     def _get_segments(cls, a_line):
