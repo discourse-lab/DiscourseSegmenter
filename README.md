@@ -1,2 +1,2 @@
 # Discourse Segmenter
-A collection of various discourse segementers.
+A collection of various discourse segmenters.
