@@ -13,6 +13,7 @@ discourse_segmenter [GLOBAL_OPTIONS] type [TYPE_SPECIFIC_OPTIONS] [FILEs]
 
 ##################################################################
 # Imports
+from __future__ import print_function
 from dsegmenter.bparseg import BparSegmenter, CTree, read_trees, read_segments, \
     trees2segs
 from dsegmenter.edseg import EDSSegmenter, CONLL
@@ -69,7 +70,7 @@ def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
         for line in sys.stdin:
             line = line.decode(a_encoding)
             if line == a_skip_line:
-                print line.encode(a_encoding)
+                print(line.encode(a_encoding))
             else:
                 yield line.rstrip()
     else:
@@ -77,7 +78,7 @@ def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
             with codecs.open(fname, encoding = a_encoding) as ifile:
                 for line in ifile:
                     if line == a_skip_line:
-                        print line.encode(a_encoding)
+                        print(line.encode(a_encoding))
                     else:
                         yield line.rstrip()
 
@@ -101,8 +102,9 @@ def _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx):
         if os.path.isfile(segf) and os.access(segf, os.R_OK):
             yield (bpf, segf)
         else:
-            print >> sys.stderr, \
-                "WARNING: No counterpart file found for BitPar file '{:s}'.".format(bpf)
+            print(\
+                "WARNING: No counterpart file found for BitPar file '{:s}'.".format(bpf), \
+                    file = sys.stderr)
 
 def _read_trees_segments(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx, \
                              a_encoding = DEFAULT_ENCODING):
@@ -148,7 +150,7 @@ def _output_segment_forrest(a_forrest, a_segmenter, a_output, a_encoding):
         return
     else:
         if a_output:
-            print unicode(a_forrest).encode(a_encoding)
+            print(unicode(a_forrest).encode(a_encoding))
         sds_list = [a_segmenter.segment(sent) for sent in a_forrest]
         for sds in sds_list:
             sds.pretty_print(a_encoding = a_encoding)
@@ -172,7 +174,7 @@ def edseg_segment(a_ilines, a_output_trees, a_encoding = DEFAULT_ENCODING):
             # print collected sentences
             _output_segment_forrest(forrest, segmenter, a_output_trees, a_encoding)
             # output line
-            print line.encode(a_encoding)
+            print(line.encode(a_encoding))
         # otherwise, append the line to the CONLL forrest
         else:
             forrest.add_line(line)
@@ -193,7 +195,7 @@ def bparseg_segment(a_segmenter, a_ilines, a_encoding = DEFAULT_ENCODING):
     segments = []
     for ctree in CTree.parse_lines(a_ilines):
         segments = a_segmenter.segment([ctree])
-        print u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding)
+        print(u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding))
 
 def bparseg_test(a_segmenter, a_trees, a_segments):
     """
@@ -206,8 +208,8 @@ def bparseg_test(a_segmenter, a_trees, a_segments):
     @return \c void
     """
     macro_f1, micro_f1 = a_segmenter.test(a_trees, a_segments)
-    print >> sys.stderr, "Macro F1-score: {:.2%}".format(macro_f1)
-    print >> sys.stderr, "Micro F1-score: {:.2%}".format(micro_f1)
+    print("Macro F1-score: {:.2%}".format(macro_f1), file = sys.stderr)
+    print("Micro F1-score: {:.2%}".format(micro_f1), file = sys.stderr)
 
 def bparseg_train(a_segmenter, a_trees, a_segments, a_path):
     """

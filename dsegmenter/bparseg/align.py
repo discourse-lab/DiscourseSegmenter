@@ -42,6 +42,8 @@ nw_align - Needleman-Wunsch alignment algorithm: (O(nm) time; O(nm) space)
 
 ##################################################################
 # Imports
+from __future__ import print_function
+
 import sys
 
 ##################################################################
@@ -310,76 +312,3 @@ def _nw_score_(s1, s2, insert = lambda c: -2, \
                                  score[crnt][prev_j] + insert(c2))
     # return last computed column of scores
     return score[crnt]
-
-##################################################################
-# Main
-
-# showcase a few examples (this section serves solely for demonstrative
-# purposes)
-if __name__ == '__main__':
-    # import additional libraries
-    import argparse
-    import sys
-    # note, alt_fio is required since traditional fileinput performs very badly
-    # and does not allow interactive input processing, since it buffers all
-    # input before yielding even a single line
-    from alt_fio import AltFileInput, AltFileOutput
-
-    # handle arguments
-    argparser = argparse.ArgumentParser(description = """Utility for aligning input sequences.""")
-    argparser.add_argument("-e", "--encoding", help = """encoding of input lines""", default = "utf-8")
-    argparser.add_argument("-n", "--needleman-wunsch", help = """use Needleman-Wunsch algorithm for alignment""", action = "store_true")
-    argparser.add_argument("--hirschberg", help="use Hirschberg algorithm for alignment (default)", \
-                               action = 'store_true', default=True)
-    argparser.add_argument("files", help = "input files in which equal and odd strings should be aligned", \
-                               nargs = '*', type = argparse.FileType('r'), \
-                               default = [sys.stdin])
-    args = argparser.parse_args()
-    # input/output encoding
-    enc = args.encoding
-    # determine which type of alignment is requested
-    if args.needleman_wunsch:
-        alignfunc = nw_align
-    else:
-        alignfunc = hb_align
-    # establish Input/Output
-    foutput   = AltFileOutput(encoding = args.encoding)
-    finput    = AltFileInput(*args.files, \
-                              print_func = foutput.fprint, \
-                              errors = "replace")
-
-    # auxiliary variables
-    line1 = line2 = ''
-    oline1 = []; oline2 = []
-    alignment = []
-    c_list    = []
-    c_i = c_len = 0
-    fnr = 0
-
-    # iterate over input lines
-    for line in finput:
-        if finput.fnr % 2 == 0:
-            line2 = line
-            # alignment will be a list of length `len(line1)`, each element of
-            # which will in turn be a list of character indices from `line2`
-            # which correspond to given `line1` element
-            alignment = alignfunc(line1, line2)
-            print >> sys.stderr, repr(alignment)
-            # populate pritty output vectors of chars
-            print >> sys.stderr, "Line1:", repr(line1)
-            print >> sys.stderr, "alignment:", repr(alignment)
-            for i, c_list in enumerate(alignment):
-                c_len = len(c_list)
-                if c_len == 0:
-                    oline1.append(line1[i])
-                    oline2.append(' ')
-                else:
-                    oline1.append(line1[i].center(c_len))
-                    for c_i in c_list:
-                        oline2.append(line2[c_i])
-            # output aligned lines in a prettily padded format (well, prettily
-            # is a bit overestimated)
-            print ''.join(oline1).encode(enc); oline1 = []
-            print ''.join(oline2).encode(enc); oline2 = []
-        else:
-            line1 = line
