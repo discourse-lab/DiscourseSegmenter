@@ -15,7 +15,7 @@ with codecs.open(path.join(pwd, "README.md"), encoding="utf-8") as ifile:
 
 ##################################################################
 # setup()
-setup(name = "dsegmenter", version = "0.0.1dev1", \
+setup(name = "dsegmenter", version = "0.0.1.dev1", \
           description = "discourse segmenters", \
           long_description = long_description, \
           author = "Wladimir Sidorenko (Uladzimir Sidarenka)", \
@@ -25,6 +25,15 @@ setup(name = "dsegmenter", version = "0.0.1dev1", \
           include_package_data = True,
           packages = ["dsegmenter", "dsegmenter.bparseg", "dsegmenter.edseg", \
                           "dsegmenter.treeseg"], \
+          # package_dir = {"dsegmenter.bparseg": "dsegmenter", \
+          #                    "dsegmenter.edseg": "dsegmenter", \
+          #                    "dsegmenter.treeseg": "dsegmenter"}, \
+          package_data = {"dsegmenter.edseg": [path.join("data", fname) for fname in \
+                                        ("dass_verbs.txt", "discourse_preps.txt", \
+                                             "finite_verbs.txt", "reporting_verbs.txt", \
+                                             "skip_rules.txt")], \
+                          "dsegmenter.bparseg": [path.join("data", "*.npy"), \
+                                                          path.join("data", "*.model")]}, \
           requires = ["scikit.learn (>=0.15.2)", \
                           "numpy (>=1.9.2)", \
                           "nltk (>=3.0.2)"], \
