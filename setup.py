@@ -2,7 +2,7 @@
 
 ##################################################################
 # Libraries
-from setuptools import setup
+from distutils.core import setup
 from os import path
 import codecs
 import glob
@@ -25,14 +25,6 @@ setup(name = "dsegmenter", version = "0.0.1dev1", \
           include_package_data = True,
           packages = ["dsegmenter", "dsegmenter.bparseg", "dsegmenter.edseg", \
                           "dsegmenter.treeseg"], \
-          package_dir = {"dsegmenter.bparseg": "dsegmenter", "dsegmenter.edseg": "dsegmenter", \
-                             "dsegmenter.treeseg": "dsegmenter"}, \
-          package_data = {"dsegmenter.edseg": [path.join("data", fname) for fname in \
-                                        ("dass_verbs.txt", "discourse_preps.txt", \
-                                             "finite_verbs.txt", "reporting_verbs.txt", \
-                                             "skip_rules.txt")], \
-                          "dsegmenter.bparseg": glob.glob(path.join("data", "*.npy")) + \
-                                                          glob.glob(path.join("data", "*.model"))}, \
           requires = ["scikit.learn (>=0.15.2)", \
                           "numpy (>=1.9.2)", \
                           "nltk (>=3.0.2)"], \
