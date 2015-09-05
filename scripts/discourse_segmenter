@@ -75,7 +75,8 @@ def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
                 yield line.rstrip()
     else:
         for fname in a_files:
-            with codecs.open(fname, encoding = a_encoding) as ifile:
+            print("_read_files: fname =", repr(fname), file = sys.stderr)
+            with codecs.open(fname, encoding = a_encoding, errors = "replace") as ifile:
                 for line in ifile:
                     if line == a_skip_line:
                         print(line.encode(a_encoding))

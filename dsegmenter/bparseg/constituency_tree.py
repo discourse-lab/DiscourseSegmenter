@@ -24,6 +24,13 @@ import sys
 import re
 
 ##################################################################
+# Constants
+OP = "-OP-"
+OP_RE = re.compile(r"\\\(")
+CP = "-CP-"
+CP_RE = re.compile(r"\\\)")
+
+##################################################################
 # Classes
 class Tree(nltk.tree.ParentedTree):
     """
@@ -80,7 +87,7 @@ class CTree(Tree):
         Parse input lines and return list of BitPar trees.
 
         @param a_lines - decoded lines of the input file
-        @param a_one_per_line - flag oindicating whether file is in one
+        @param a_one_per_line - flag indicating whether file is in one
                          sentence per line format
 
         @return iterator over constituency trees
@@ -106,7 +113,7 @@ class CTree(Tree):
                         for seg in cls._get_segments(iline):
                             yield Tree.fromstring(seg)
                 else:
-                    lines.append(iline)
+                    lines.append(CP_RE.sub(CP, OP_RE.sub(OP, iline)))
         if lines:
             yield Tree.fromstring(u'\t'.join(lines))
 

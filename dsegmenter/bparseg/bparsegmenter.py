@@ -488,8 +488,8 @@ class BparSegmenter(object):
 
         @return \c void
         """
-        if self.model is None:
-            raise ValueError("Invalid model to train.")
+        # drop current model
+        self._update_segmenter(self.DEFAULT_PIPELINE)
         # generate features
         feats = [self.featgen(t) for t in a_trees]
         a_segs = [str(s) for s in a_segs]
