@@ -1,4 +1,5 @@
 # Discourse Segmenter
+[![The MIT License](https://img.shields.io/dub/l/vibe-d.svg)](http://opensource.org/licenses/MIT)
 
 A collection of various discourse segmenters with training data for German texts.
 
@@ -14,7 +15,7 @@ The latter submodule is an ML-based segmenter that operates on syntactic constit
 
 ### From source tarball
 
-```
+```shell
 pip install dsegmenter-0.0.1dev1.tgz
 ```
 
@@ -22,7 +23,7 @@ pip install dsegmenter-0.0.1dev1.tgz
 
 You can either import the python modules in your scripts (see an example [here](scripts/discourse_segmenter)), e.g.:
 
-```
+```python
 from dsegmenter.bparseg import BparSegmenter, CTree
 
 segmenter = BparSegmenter()
@@ -30,6 +31,6 @@ segmenter = BparSegmenter()
 
 or use the stand-alone script that comes with this module:
 
-```
+```shell
 discourse_segmenter --help
 ```
