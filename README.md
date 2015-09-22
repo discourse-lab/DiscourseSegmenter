@@ -25,7 +25,7 @@ pip install dsegmenter-0.0.1dev1.tgz
 You can either import the python modules in your scripts (see an example [here](scripts/discourse_segmenter)), e.g.:
 
 ```python
-from dsegmenter.bparseg import BparSegmenter, CTree
+from dsegmenter.bparseg import BparSegmenter
 
 segmenter = BparSegmenter()
 ```
