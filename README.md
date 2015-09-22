@@ -1,8 +1,6 @@
 # Discourse Segmenter
 
-<div style="text-align:right">
-<a href="http://opensource.org/licenses/MIT" title="MIT License"><img src="https://img.shields.io/dub/l/vibe-d.svg" alt="MIT License"></a>
-</div>
+[![The MIT License](https://img.shields.io/dub/l/vibe-d.svg)](http://opensource.org/licenses/MIT)
 
 A collection of various discourse segmenters with training data for German texts.
 
