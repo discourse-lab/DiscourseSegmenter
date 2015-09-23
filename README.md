@@ -14,10 +14,18 @@ The latter submodule is an ML-based segmenter that operates on syntactic constit
 
 ## Installation
 
-### From source tarball
+You can install this package:
 
+* directly from source
 ```shell
-pip install dsegmenter-0.0.1dev1.tgz
+git clone git@github.com:WladimirSidorenko/DiscourseSegmenter.git
+cd DiscourseSegmenter
+./setup.py install
+```
+
+* from the distributed tarball
+```shell
+pip install dsegmenter-0.0.1.dev1.tar.gz
 ```
 
 ## Usage
