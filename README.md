@@ -19,7 +19,7 @@ To install this package from the distributed tarball, run
 pip install  https://github.com/WladimirSidorenko/DiscourseSegmenter/archive/0.0.1.dev1.tar.gz
 ```
 
-Alternatively, you can also install this package directly from source repository by executing:
+Alternatively, you can also install it directly from source repository by executing:
 ```shell
 git clone git@github.com:WladimirSidorenko/DiscourseSegmenter.git
 cd DiscourseSegmenter
