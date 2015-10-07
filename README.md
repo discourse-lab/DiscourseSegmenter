@@ -16,16 +16,15 @@ This python module currently comprises two discourse segmenters: *edseg* and *bp
 
 ## Installation
 
-To install this package from the distributed tarball, run
+To install this package from the distributed tarball (provided that all requirements are satisfied), run
 ```shell
 pip install  https://github.com/WladimirSidorenko/DiscourseSegmenter/archive/0.0.1.dev1.tar.gz
 ```
 
-Alternatively, you can also install it directly from the source repository by executing:
+Alternatively, you can also install it directly from the source repository (currently recommended) by executing:
 ```shell
 git clone git@github.com:WladimirSidorenko/DiscourseSegmenter.git
-cd DiscourseSegmenter
-./setup.py install
+pip install -r DiscourseSegmenter/requirements.txt DiscourseSegmenter/ --user
 ```
 
 ## Usage
