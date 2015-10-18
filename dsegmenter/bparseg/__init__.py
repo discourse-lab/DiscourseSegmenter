@@ -16,9 +16,9 @@ bparsegmenter - class for segmenting syntax trees into dicsourse units
 
 ##################################################################
 # Imports
-from constants import ENCODING, NO_PARSE_RE, WORD_SEP
-from bparsegmenter import BparSegmenter, read_trees, read_segments, trees2segs
-from constituency_tree import CTree
+from .constants import ENCODING, NO_PARSE_RE, WORD_SEP
+from .bparsegmenter import BparSegmenter, read_trees, read_segments, trees2segs
+from .constituency_tree import CTree
 
 ##################################################################
 # Intialization
