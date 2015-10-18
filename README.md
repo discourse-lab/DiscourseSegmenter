@@ -40,5 +40,6 @@ segmenter = BparSegmenter()
 or, alternatively, also use the delivered front-end script `discourse_segmenter` to process your parsed input data, e.g.:
 
 ```shell
-discourse_segmenter examples/bpar/maz-8727.exb.bpar
+discourse_segmenter bparseg segment DiscourseSegmenter/examples/bpar/maz-8727.exb.bpar
 ```
+Note that this script requires two mandatory arguments: the type of the segmenter to use (`bparseg` in the above case) and the operation to perform (which are specific to each segmenter).
