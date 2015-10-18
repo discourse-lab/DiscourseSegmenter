@@ -17,8 +17,9 @@ TreeSegmenter - class for converting parse trees to discourse segments
 
 ##################################################################
 # Imports
-from constants import GREEDY, GENEROUS, DEPENDENCY, CONSTITUENCY
-from discourse_segment import DiscourseSegment
+from .constants import GREEDY, GENEROUS, DEPENDENCY, CONSTITUENCY
+from .discourse_segment import DiscourseSegment
+
 import sys
 
 ##################################################################

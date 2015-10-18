@@ -386,7 +386,7 @@ class CONLLWord(object):
         if name in self.key2field:
             return self.fields[self.key2field[name]]
         else:
-            raise AttributeError, name
+            raise AttributeError("cannot find symbol {:s}".format(name))
 
     def __getitem__(self, name):
         """Return self.field's item if this item's name is present in key2field.
@@ -401,7 +401,7 @@ class CONLLWord(object):
         try:
             return self.__getattr__(name)
         except AttributeError:
-            raise IndexError, name
+            raise IndexError("cannot find index {:s}".format(name))
 
     def __setitem__(self, name, value):
         """Set the value of given item `name' to `value'.
@@ -413,7 +413,7 @@ class CONLLWord(object):
         if name in self.key2field:
             self.fields[self.key2field[name]] = value
         else:
-            raise IndexError, name
+            raise IndexError("cannot find index {:s}".format(name))
 
     def __unicode__(self):
         """Return unicode representation of this object."""

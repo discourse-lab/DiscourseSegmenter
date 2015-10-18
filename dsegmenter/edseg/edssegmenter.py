@@ -29,10 +29,10 @@ Exceptions:
 
 ##################################################################
 # Imports
-from clause_segmentation import ClauseSegmenter
-from finitestateparsing import Tree
-from util import StartOfClauseMatcher, Trie
-import data
+from .clause_segmentation import ClauseSegmenter
+from .finitestateparsing import Tree
+from .util import StartOfClauseMatcher, Trie
+from . import data
 
 import sys
 

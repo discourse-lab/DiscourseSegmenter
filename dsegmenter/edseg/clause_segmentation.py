@@ -19,10 +19,10 @@ ClauseSegmenter - class for doing clause segmentation
 
 ##################################################################
 # Libraries
-from chunking import Chunker
-from finitestateparsing import FiniteStateParser, Tree
-from util import match as match_
-import data
+from .chunking import Chunker
+from .finitestateparsing import FiniteStateParser, Tree
+from .util import match as match_
+from .data import DELIMS, DELIM_NAMES, finite_verbs
 
 import sys
 
@@ -39,8 +39,8 @@ def catgetter(node):
     if hasattr(node, 'label'):
         return node.label
     form = unicode(node['form'])
-    if form in data.DELIM_NAMES:
-        return data.DELIM_NAMES[form]
+    if form in DELIM_NAMES:
+        return DELIM_NAMES[form]
     return node['pos']
 
 ##################################################################
@@ -87,7 +87,7 @@ class ClauseSegmenter(object):
 
     def _prepare_tokens(self, sent):
         for token in sent:
-            verb_type = data.finite_verbs.get(token['form'], default=None)
+            verb_type = finite_verbs.get(token['form'], default=None)
             if verb_type is not None:
                 token['pos'] = 'V{0}FIN'.format(verb_type)
 
@@ -215,9 +215,9 @@ class ClauseSegmenter(object):
         # Parenthesized segments #
         ##########################
 
-        for ldelim, rdelim in data.DELIMS.iteritems():
-            ldelim_name = data.DELIM_NAMES[ldelim]
-            rdelim_name = data.DELIM_NAMES[rdelim]
+        for ldelim, rdelim in DELIMS.iteritems():
+            ldelim_name = DELIM_NAMES[ldelim]
+            rdelim_name = DELIM_NAMES[rdelim]
             add_rule('Paren', '<{0}>[^<{1}>]+<{1}>'.format(ldelim_name,
                                                            rdelim_name))
 

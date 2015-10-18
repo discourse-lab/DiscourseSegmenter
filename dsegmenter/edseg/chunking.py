@@ -25,7 +25,7 @@ UnificationFailure - exception raise on non-merged feature bits
 
 ##################################################################
 # Libraries
-from finitestateparsing import constraint, FiniteStateParser
+from .finitestateparsing import constraint, FiniteStateParser
 
 from copy import deepcopy
 import sys

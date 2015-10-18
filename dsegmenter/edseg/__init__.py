@@ -24,8 +24,8 @@ util - auxiliary match routines needed for rule matching
 
 ##################################################################
 # Imports
-from conll import CONLL
-from edssegmenter import EDSSegmenter
+from .conll import CONLL
+from .edssegmenter import EDSSegmenter
 
 ##################################################################
 # Variables and Constants

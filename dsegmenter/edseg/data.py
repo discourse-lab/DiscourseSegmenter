@@ -28,7 +28,7 @@ load_verb_list - function for reading lists of words from file and putting them
 
 ##################################################################
 # Imports
-from util import Trie, VerbMatcher
+from .util import Trie, VerbMatcher
 
 from functools import partial
 import codecs
@@ -132,7 +132,7 @@ with codecs.open(data_dir('discourse_preps.txt'), encoding='utf-8') as _fp:
         if not _line:
             continue
         try:
-            _prep, _circumpos = map(unicode.strip, _line.split('*'))
+            _prep, _circumpos = [s.strip() for s in _line.split('*')]
         except ValueError:
             _prep, _circumpos = _line, None
         discourse_preps.add_word(_prep, _circumpos)

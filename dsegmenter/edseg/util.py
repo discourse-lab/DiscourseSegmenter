@@ -326,8 +326,8 @@ class VerbMatcher(object):
             constraints = []
             if '[' in verb:
                 stem, constr = stem.rstrip(']').rsplit('[', 1)
-                for constraint in map(unicode.strip,
-                        constr.rsplit('[', 1))[-1].split(','):
+                for constraint in [s.strip() for s in
+                        constr.rsplit('[', 1)][-1].split(','):
                     if '/' in constraint:
                         lemma, pos = constraint.split('/', 1)
                         constraints.append(partial(

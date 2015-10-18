@@ -33,9 +33,9 @@ Exceptions:
 
 ##################################################################
 # Libraries
-from align import nw_align
-from constants import ENCODING
-from constituency_tree import Tree, CTree
+from .align import nw_align
+from .constants import ENCODING
+from .constituency_tree import Tree, CTree
 from ..treeseg import TreeSegmenter, DiscourseSegment, CONSTITUENCY, DEFAULT_SEGMENT
 
 # from sklearn.cross_validation import KFold
@@ -544,7 +544,7 @@ class BparSegmenter(object):
             self.decfunc = lambda el: None
             self._segmenter = TreeSegmenter(a_decfunc = self.decfunc, a_type = CONSTITUENCY)
             return
-        elif isinstance(a_model, basestring):
+        elif isinstance(a_model, str):
             if not os.path.isfile(a_model) or not os.access(a_model, os.R_OK):
                 raise RuntimeError("Can't create model from file {:s}".format(a_model))
             self.model = joblib.load(a_model)

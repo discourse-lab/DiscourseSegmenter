@@ -15,7 +15,7 @@ CTree - interface for handling constituency trees
 
 ##################################################################
 # Imports
-from constants import NO_PARSE_RE, WORD_SEP, ENCODING
+from .constants import NO_PARSE_RE, WORD_SEP, ENCODING
 
 import codecs
 import nltk.tree

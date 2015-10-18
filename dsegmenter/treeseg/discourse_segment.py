@@ -17,7 +17,8 @@ DiscourseSegment - class representing discourse segment
 
 ##################################################################
 # Imports
-from constants import ENCODING
+from .constants import ENCODING
+
 from bisect import bisect_right
 
 ##################################################################
