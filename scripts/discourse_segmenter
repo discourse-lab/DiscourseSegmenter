@@ -13,7 +13,7 @@ discourse_segmenter [GLOBAL_OPTIONS] type [TYPE_SPECIFIC_OPTIONS] [FILEs]
 
 ##################################################################
 # Imports
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 from dsegmenter.bparseg import BparSegmenter, CTree, read_trees, read_segments, \
     trees2segs
 from dsegmenter.edseg import EDSSegmenter, CONLL
@@ -193,12 +193,14 @@ def edseg_segment(a_ilines, a_output_trees, a_encoding = DEFAULT_ENCODING):
     # output remained EDUs
     _output_segment_forrest(forrest, segmenter, a_output_trees, a_encoding)
 
-def bparseg_segment(a_segmenter, a_ilines, a_encoding = DEFAULT_ENCODING):
+def bparseg_segment(a_segmenter, a_ilines, a_encoding = DEFAULT_ENCODING, \
+                    a_ostream = sys.stdout):
     """Perform machine-learning driven segmentation of BitPar constituency trees.
 
     @param a_segmenter - pointer to BitPar segmenter
     @param a_ilines - iterator over input lines
     @param a_encoding - text encoding used for input/output
+    @param a_ostream - output stream
 
     @return \c void
 
@@ -206,7 +208,8 @@ def bparseg_segment(a_segmenter, a_ilines, a_encoding = DEFAULT_ENCODING):
     segments = []
     for ctree in CTree.parse_lines(a_ilines):
         segments = a_segmenter.segment([ctree])
-        print(u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding))
+        print(u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding), \
+              file = a_ostream)
 
 def bparseg_test(a_segmenter, a_trees, a_segments):
     """Evaluate performance of segment classification.
@@ -247,7 +250,7 @@ def _cnt_stat(a_gold_segs, a_pred_segs):
 
 
 def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs, \
-             a_output = False, a_out_dir = ".", a_out_sfx = ".out", \
+             a_output = False, a_out_dir = ".", a_out_sfx = ".tree", \
              a_folds = N_FOLDS, a_encoding = ENCODING):
     """Train and evaluate model using n-fold cross-validation.
 
@@ -276,6 +279,8 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs, \
     # segment classes to strings
     a_fname2segs = {os.path.splitext(os.path.basename(k))[0] + a_out_sfx: \
                     [str(iseg) for iseg in v] for k, v in a_fname2segs.iteritems()}
+    ofname2ifname = {os.path.splitext(os.path.basename(k))[0] + a_out_sfx: k \
+                     for k in a_fname2trees}
     a_fname2trees = {os.path.splitext(os.path.basename(k))[0] + a_out_sfx: v \
                      for k, v in a_fname2trees.iteritems()}
     # estimate the number of and generate folds
@@ -300,8 +305,9 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs, \
     pred_segs = []
     out_fnames = []
     fname2range = {}
+    # fname2gld_pred = {}
     processed_fnames = {}
-    test_fname = out_fname = ""
+    in_fname = test_fname = out_fname = ""
     train_feats = train_segs = None
     test_feats = []; test_segs = []
     tp = fp = fn = tp_i = fp_i = fn_i = 0
@@ -344,16 +350,21 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs, \
                 if test_fname in processed_fnames and processed_fnames[test_fname] > macro_f1:
                     continue
                 processed_fnames[test_fname] = macro_f1
-                fname2gld_pred[test_fname] = [(test_segs[i], pred_segs[i]) \
-                                              for i in xrange(*fname2range[test_fname])]
-                segs = a_segmenter.segment(a_fname2trees[test_fname])
+                # fname2gld_pred[test_fname] = [(test_segs[i], pred_segs[i]) \
+                #                               for i in xrange(*fname2range[test_fname])]
+                in_fname = ofname2ifname[test_fname]
                 out_fname = os.path.join(a_out_dir, test_fname)
-                print(u'\n'.join([unicode(s[-1]) for s in segments]).encode(a_encoding), \
-                      file = out_fname)
+                with open(out_fname, "w") as ofile:
+                    print("(TEXT", file = ofile)
+                    bparseg_segment(a_segmenter, _read_files([in_fname], a_encoding), \
+                                    a_encoding, ofile)
+                    print(")", file = ofile)
         test_feats = []; test_segs = []
         del trees[:]; del out_fnames[:]; fname2range.clear()
-    print("Average macro F1: {:.2%} +/- {:.2%}".format(np.mean(macro_F1s), np.std(macro_F1s)), file = sys.stderr)
-    print("Average micro F1: {:.2%} +/- {:.2%}".format(np.mean(micro_F1s), np.std(micro_F1s)), file = sys.stderr)
+    print("Average macro F1: {:.2%} +/- {:.2%}".format(np.mean(macro_F1s), np.std(macro_F1s)), \
+          file = sys.stderr)
+    print("Average micro F1: {:.2%} +/- {:.2%}".format(np.mean(micro_F1s), np.std(micro_F1s)), \
+          file = sys.stderr)
     if tp or fp or fn:
         F1_tpfp = (2. * tp / (2. * tp + fp + fn))
     print("F1_{{tp,fp}} {:.2%}".format(F1_tpfp), file = sys.stderr)
