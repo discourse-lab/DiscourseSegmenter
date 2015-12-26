@@ -60,10 +60,11 @@ class Tree(nltk.tree.ParentedTree):
         return id(self)
 
     def prnt_label(self):
-        """
-        Return label  of this object.
+        """Return label of this object.
 
-        @return label of parent node or empty string if no parent exists
+        Returns:
+          str: label of parent node or empty string if no parent exists
+
         """
         if self._parent:
             return self._parent.label()
@@ -71,26 +72,27 @@ class Tree(nltk.tree.ParentedTree):
 
 ##################################################################
 class CTree(Tree):
-    """
-    Class for reading and modifying constituency trees.
+    """Class for reading and modifying constituency trees.
 
-    This class subclasses the Tree class.
+    This class subclasses :class:`Tree`.
 
-    This class extends its parent by one additional public class method:
-    parse_lines - parse input lines and return list of constituency trees
+    This class extends its parent by one additional public class method
+    :meth:`parse_lines()`
 
     """
 
     @classmethod
     def parse_lines(cls, a_lines, a_one_per_line = False):
-        """
-        Parse input lines and return list of BitPar trees.
+        """Parse input lines and return list of BitPar trees.
 
-        @param a_lines - decoded lines of the input file
-        @param a_one_per_line - flag indicating whether file is in one
+        Args:
+          a_lines (list): decoded lines of the input file
+          a_one_per_line (bool): flag indicating whether file is in one
                          sentence per line format
 
-        @return iterator over constituency trees
+        Yields:
+          constituency trees
+
         """
         lines = []
         itree = None

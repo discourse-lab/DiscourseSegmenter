@@ -5,28 +5,22 @@
 # Documentation
 """Module providing discourse segmenter for constituency trees.
 
-Constants:
-SUBSTITUTEF - custom weighting function used for token alignment
-
-Methods:
-_ispunct - check if word consists only of punctuation characters
-_prune_punc - remove tokens representing punctuation from set
-_translate_toks - replace tokens and return updated set
-tree2tok - create dictionary mapping constituency trees to numbered tokens
-read_trees - read file and return a list of constituent dictionaries
-read_segments - read file and return a list of segment dictionaries
-trees2segs - align trees with corresponding segments
-featgen - default feature generation function
-classify - default classification method
+Attributes:
+  SUBSTITUTEF (method): custom weighting function used for token alignment
+  _ispunct (method): check if word consists only of punctuation characters
+  _prune_punc (method): remove tokens representing punctuation from set
+  _translate_toks (method): replace tokens and return updated set
+  tree2tok (method): create dictionary mapping constituency trees to numbered tokens
+  read_trees (method): read file and return a list of constituent dictionaries
+  read_segments (method): read file and return a list of segment dictionaries
+  trees2segs (method): align trees with corresponding segments
+  featgen (method): default feature generation function
+  classify (method): default classification method
 
 Classes:
-BparSegmenter - discourse segmenter for constituency trees
+  BparSegmenter: discourse segmenter for constituency trees
 
-Exceptions:
-
-@author = Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <sidarenk at uni dash potsdam dot de>
-@version = 0.0.1
+.. moduleauthor:: Wladimir Sidorenko (Uladzimir Sidarenka)
 
 """
 
@@ -66,9 +60,11 @@ locale.setlocale(locale.LC_ALL, "")
 def _ispunct(a_word):
     """Check if word consists only of punctuation characters.
 
-    @param a_word - word to check
+    Args:
+      a_word (str): word to check
 
-    @return True if word consists only of punctuation characters, False otherwise
+    Returns:
+      (bool) True if word consists only of punctuation characters, False otherwise
 
     """
     return all(c in string.punctuation for c in a_word)
@@ -103,10 +99,12 @@ def _translate_toks(a_toks, a_translation):
 def tree2tok(a_tree, a_start = 0):
     """Create dictionary mapping constituency trees to numbered tokens.
 
-    @param a_tree - tree to analyze
-    @param a_start - starting position of the first token
+    Args:
+      a_tree (constituency_tree.Tree): tree to analyze
+      a_start (int): starting position of the first token
 
-    @return dictionary mapping subtrees to their yields
+    Returns:
+      (dict) mapping from subtrees to their yields
 
     """
     rset = set()
@@ -128,9 +126,11 @@ def tree2tok(a_tree, a_start = 0):
 def read_trees(a_lines, a_one_per_line = False):
     """Read file and return a list of constituent dictionaries.
 
-    @param a_lines - decoded lines of the input file
+    Args:
+      a_lines (list[str]): decoded lines of the input file
 
-    @return list of dictionaries mapping tokens to trees and a list of trees
+    Returns:
+      2-tuple: list of dictionaries mapping tokens to trees and a list of trees
 
     """
     ctrees = CTree.parse_lines(a_lines, a_one_per_line = a_one_per_line)
@@ -155,9 +155,11 @@ def read_trees(a_lines, a_one_per_line = False):
 def read_segments(a_lines):
     """Read file and return a list of segment dictionaries.
 
-    @param a_lines - decoded lines of the input file
+    Args:
+      a_lines (list): decoded lines of the input file
 
-    @return dictionary which maps tokens to segments
+    Returns:
+      dict: mapping from tokens to segments
 
     """
     segs2toks = {}
@@ -218,10 +220,12 @@ def read_segments(a_lines):
 def trees2segs(a_toks2trees, a_toks2segs):
     """Align trees with corresponding segments.
 
-    @param a_toks2trees - dictionary mapping tokens to trees
-    @param a_toks2segs - dictionary mapping tokens to segments
+    Args:
+      a_toks2trees (dict): mapping from tokens to trees
+      a_toks2segs (dict): mapping from tokens to segments
 
-    @return tree-segment dictionary
+    Returns:
+      dict: mapping from trees to segments
 
     """
     # prune empty trees and their corresponding segments
@@ -329,28 +333,15 @@ def classify(a_classifier, a_featgen, a_el, a_default = None):
 class BparSegmenter(object):
     """Class for perfoming discourse segmentation on constituency trees.
 
-    Constants:
-    DEFAULT_CLASSIFIER - default classification method
-    DEFAULT_MODEL - default model to use in classification
-    DEFAULT_PIPELINE - default pipeline object used for classification
-
-    Instance variables:
-    model - path to the model that is used for classification
-    featgen - pointer to function that is used for feature generation
-    classify - pointer to function that is used for classification
-               (it should accept two arguments: pointer to a model and
-               a list of features)
-    _segmenter - internal tree segmenter
-
-    Public instance methods:
-    segment - function for doing discourse segmentation on BitPar trees
-    train - train and store new model
-    test - evalute model on test data
-
     """
 
+    #: classifier object: default classification method
     DEFAULT_CLASSIFIER = LinearSVC(C = 0.3, multi_class = 'crammer_singer')
+
+    #:str: path  to default model to use in classification
     DEFAULT_MODEL = os.path.join(os.path.dirname(__file__), "data", "bpar.model")
+
+    #:pipeline object: default pipeline object used for classification
     DEFAULT_PIPELINE = Pipeline([('vectorizer', DictVectorizer()),
                          ('var_filter', VarianceThreshold()),
                          ('LinearSVC', DEFAULT_CLASSIFIER)])
@@ -359,11 +350,13 @@ class BparSegmenter(object):
                      a_model = DEFAULT_MODEL):
         """Class constructor.
 
-        @param a_featgen - function to be used for feature generation
-        @param a_classify - pointer to 2-arg function which predicts segment class for BitPar
-                            tree based on the model and features generated for that tree
-        @param a_model - path to a pre-trained model (previously dumped by joblib) or
-                         valid classification object or None
+        Args:
+          a_featgen (method): function to be used for feature generation
+          a_classify (method): pointer to 2-arg function which predicts segment
+                            class for BitPar tree based on the model and
+                            features generated for that tree
+          a_model (str): path to a pre-trained model (previously dumped by
+                         joblib) or valid classification object or None
 
         """
         self.featgen = a_featgen
@@ -373,9 +366,11 @@ class BparSegmenter(object):
     def segment(self, a_trees):
         """Create discourse segments based on the BitPar trees.
 
-        @param a_trees - list of sentence trees to be parsed
+        Args:
+          a_trees (list): list of sentence trees to be parsed
 
-        @return iterator over constructed segment trees
+        Returns:
+          iterator: constructed segment trees
 
         """
         seg_idx = 0
@@ -399,11 +394,14 @@ class BparSegmenter(object):
     def train(self, a_trees, a_segs, a_path):
         """Train segmenter model.
 
-        @param a_trees - list of BitPar trees
-        @param a_segs - list of discourse segments
-        @param a_path - path to file in which the trained model should be stored
+        Args:
+          a_trees (list): BitPar trees
+          a_segs (list): discourse segments
+          a_path (str): path to file in which the trained model should be
+                        stored
 
-        @return \c void
+        Returns:
+          void:
 
         """
         # drop current model
@@ -419,10 +417,12 @@ class BparSegmenter(object):
     def test(self, a_trees, a_segments):
         """Estimate performance of segmenter model.
 
-        @param a_trees - list of BitPar trees
-        @param a_segments - list of corresponding gold segments for trees
+        Args:
+          a_trees (list): BitPar trees
+          a_segments (list): corresponding gold segments for trees
 
-        @return 2-tuple with macro and micr F-score
+        Returns:
+          2-tuple: macro and micro-averaged F-scores
 
         """
         if self.model is None:

@@ -3,14 +3,20 @@
 
 ##################################################################
 # Documentation
-"""
-Package providing discourse segmenter for BitPar constituency trees.
+"""Package providing discourse segmenter for BitPar constituency trees.
 
-Modules:
-align - auxiliary routines for doing string alignment
-constants - defines constants specific to that package
-constituency_tree - proxy class for handling constituency syntax trees
-bparsegmenter - class for segmenting syntax trees into dicsourse units
+Attributes:
+  align (module): auxiliary routines for doing string alignment
+  constants (module): constants specific to that package
+  constituency_tree (module): proxy class for handling constituency syntax
+                              trees
+  bparsegmenter (module): class for segmenting syntax trees into discourse
+                          units
+  __all__ (List[str]): list of sub-modules exported by this package
+  __author__ (str): package's author
+  __email__ (str): email of package's author
+  __name__ (str): package's name
+  __version__ (str): package version
 
 """
 

@@ -1,4 +1,4 @@
-include README.md
+include README.rst
 include requirements.txt
 include dsegmenter/bparseg/data/*.model
 include dsegmenter/bparseg/data/*.npy

@@ -4,17 +4,19 @@
 ##################################################################
 # Documentation
 
-"""
-Main meta-package containing a collection of discourse segmenters
+"""Main meta-package containing a collection of discourse segmenters.
 
-Subpackages:
-edseg - rule-based discourse segmenter for Mate dependency trees
-treeseg - auxiliary segmenter routines used by syntax-driven segmenters
-bparseg - machine-learning discourse segmenter for BitPar constituency trees
+Attributes:
+  edseg (module): rule-based discourse segmenter for Mate dependency trees
+  treeseg (module): auxiliary segmenter routines used by syntax-driven segmenters
+  bparseg (module): machine-learning discourse segmenter for BitPar constituency trees
+  __all__ (List[str]): list of sub-modules exported by this package
+  __author__ (str): package's author
+  __email__ (str): email of package's author
+  __name__ (str): package's name
+  __version__ (str): package version
 
-@author = Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <sidarenk at uni dash potsdam dot de>
-@version = 0.0.1
+.. moduleauthor:: Wladimir Sidorenko (Uladzimir Sidarenka)
 
 """
 

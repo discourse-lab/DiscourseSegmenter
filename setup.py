@@ -10,7 +10,7 @@ import glob
 ##################################################################
 # Variables and Constants
 pwd = path.abspath(path.dirname(__file__))
-with codecs.open(path.join(pwd, "README.md"), encoding="utf-8") as ifile:
+with codecs.open(path.join(pwd, "README.rst"), encoding="utf-8") as ifile:
     long_description = ifile.read()
 
 ##################################################################
