@@ -16,7 +16,7 @@ with codecs.open(path.join(pwd, "README.rst"), encoding="utf-8") as ifile:
 ##################################################################
 # setup()
 setup(name = "dsegmenter", version = "0.0.1.dev1", \
-          description = "discourse segmenters", \
+          description = "Collection of discourse segmenters (with pre-trained models for German)", \
           long_description = long_description, \
           author = "Wladimir Sidorenko (Uladzimir Sidarenka)", \
           author_email = "sidarenk@uni-potsdam.de", \
@@ -46,10 +46,10 @@ setup(name = "dsegmenter", version = "0.0.1.dev1", \
                              "Natural Language :: German", \
                              "Operating System :: Unix", \
                              "Operating System :: MacOS", \
-                             "Operating System :: Microsoft :: Windows", \
+                             # "Operating System :: Microsoft :: Windows", \
                              "Programming Language :: Python :: 2", \
                              "Programming Language :: Python :: 2.6", \
                              "Programming Language :: Python :: 2.7", \
-                             "Programming Language :: Python :: 3", \
+                             # "Programming Language :: Python :: 3", \
                              "Topic :: Text Processing :: Linguistic"], \
           keywords="discourse segmentation NLP linguistics")
