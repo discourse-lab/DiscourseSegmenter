@@ -44,9 +44,9 @@ setup(name = "dsegmenter", version = "0.0.1.dev1", \
                              "Intended Audience :: Science/Research", \
                              "License :: OSI Approved :: MIT License", \
                              "Natural Language :: German", \
-                             "Operationg System :: Unix", \
-                             "Operationg System :: MacOS", \
-                             "Operationg System :: Microsoft :: Windows", \
+                             "Operating System :: Unix", \
+                             "Operating System :: MacOS", \
+                             "Operating System :: Microsoft :: Windows", \
                              "Programming Language :: Python :: 2", \
                              "Programming Language :: Python :: 2.6", \
                              "Programming Language :: Python :: 2.7", \
