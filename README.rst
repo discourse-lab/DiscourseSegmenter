@@ -2,7 +2,7 @@
 Discourse Segmenter
 ===================
 
-.. image:: _static/vibe-d.svg
+.. image:: https://img.shields.io/badge/license-BSD-blue.svg
    :alt: BSD License
    :align: right
    :target: http://opensource.org/licenses/MIT
