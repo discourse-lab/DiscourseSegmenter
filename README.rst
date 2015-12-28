@@ -2,12 +2,12 @@
 Discourse Segmenter
 ===================
 
-.. image:: https://img.shields.io/badge/license-BSD-blue.svg
-   :alt: BSD License
+.. image:: https://img.shields.io/badge/license-MIT-blue.svg
+   :alt: MIT License
    :align: right
    :target: http://opensource.org/licenses/MIT
 
-A collection of various discourse segmenters (primarily for German texts).
+A collection of various discourse segmenters (with pre-trained models for German texts).
 
 Description
 ===========
@@ -35,15 +35,14 @@ This python module currently comprises two discourse segmenters:
 Installation
 ============
 
-To install this package from the distributed tarball (provided that
-all requirements are satisfied), run
+To install this package from the PyPi index, run
 
 .. code-block:: shell
 
-    pip install  https://github.com/WladimirSidorenko/DiscourseSegmenter/archive/0.0.1.dev1.tar.gz
+    pip install dsegmenter
 
 Alternatively, you can also install it directly from the source
-repository (currently recommended) by executing:
+repository by executing:
 
 .. code-block:: shell
 
