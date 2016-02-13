@@ -448,7 +448,7 @@ processing and output without changes (defaults to empty lines)""", type = str, 
                 pass
             elif os.path.exists(mdir):
                 if not os.path.isdir(mdir) or not os.access(mdir, os.R_OK):
-                    puts >> sys.stderr, "Can't write to directory '{:s}'.".format(mdir)
+                    print("Can't write to directory '{:s}'.".format(mdir), file = sys.stderr)
             else:
                 os.makedirs(mdir)
             segmenter = BparSegmenter()
