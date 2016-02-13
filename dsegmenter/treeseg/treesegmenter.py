@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- mode: python; coding: utf-8 -*-
+# -*- mode: python; coding: utf-8; -*-
 
 ##################################################################
 # Documentation
@@ -19,23 +19,17 @@ TreeSegmenter - class for converting parse trees to discourse segments
 # Imports
 from .constants import GREEDY, GENEROUS, DEPENDENCY, CONSTITUENCY
 from .discourse_segment import DiscourseSegment
-
-import sys
+from ..mateseg.dependency_graph import WORD, REL, DEPS, TAG
 
 ##################################################################
 # Constants
-HEAD ="head"
-DEPS = "deps"
-WORD = "word"
-REL ="rel"
-TAG = "tag"
 NO_MATCH_STRING = "NONE"
+
 
 ##################################################################
 # Class
 class TreeSegmenter(object):
-    """
-    Class for converting parse trees to discourse segments.
+    """Class for converting parse trees to discourse segments.
 
     Instance Variables:
     decfunc - decision function
@@ -43,15 +37,16 @@ class TreeSegmenter(object):
     type - type of trees to be processed
 
     Methods:
-    segment - public function for extracting discourse segments from parse trees
+    segment - extract discourse segments from parse trees
+
     """
 
-    def __init__(self, a_decfunc = None, a_type = DEPENDENCY):
+    def __init__(self, a_decfunc=None, a_type=DEPENDENCY):
         """
         Class constructor.
         """
         # set default decision function, if none was specified
-        self.decfunc =  a_decfunc
+        self.decfunc = a_decfunc
 
         # set default segmentation function, if none was specified
         if a_type == DEPENDENCY:
@@ -63,24 +58,21 @@ class TreeSegmenter(object):
             if self.decfunc is None:
                 self.decfunc = self._cnst_decfunc
         else:
-            raise RuntimeError("Invalid tree type specified for tree segmenter:\
- '{:s}'".format(a_type))
+            raise RuntimeError("Invalid tree type specified for tree"
+                               " segmenter: '{:s}'".format(a_type))
 
-    def _dg_segment(self, a_tree, a_ret = [], a_predict = None, \
-                    a_head2pos = {}, a_root_idx = 0, a_children = [], \
-                    a_word_access = lambda x:x, a_strategy = GREEDY):
-        """
-        Method for extracting discourse segments from dependency parse trees.
+    def _dg_segment(self, a_tree, a_predict=None,
+                    a_root_idx=0, a_children=[],
+                    a_word_access=lambda x: x, a_strategy=GREEDY):
+        """Extract discourse segments from dependency parse trees.
 
         @param a_tree - parse tree which should be processed (with interface
                         compatible with nltk.parse.dependencygraph)
-        @param a_ret - target list which should be populated with segments
         @param a_predict - prediction function
-        @param a_head2pos - dictionary mapping node labels to their position in tree
         @param a_root_idx - index of the root node in the list of tree nodes
         @param a_children - index of the child nodes
-        @param a_word_access - a function for accessing the token string for more complex,
-                         structured tokens
+        @param a_word_access - a function for accessing the token string for
+                         more complex, structured tokens
         @param a_strategy - flag for handling missing and non-projective edges
         (GREEDY means that only adjacent descendants of the root node will
         be put into a segment, if the root initiates one; GENEROUS means that
@@ -89,38 +81,40 @@ class TreeSegmenter(object):
         dependency tree)
 
         @return list of discourse segments
+
         """
+        a_ret = []
         dec = None             # decision
         if a_predict is None:
             a_predict = self.decfunc
-        # create a dictionary of node positions
         if a_children:
             children = a_children
         elif a_root_idx is None:
             children = []
         else:
             children = [a_root_idx]
-        ipos = -1
-        inode = dseg = None
-        outleaves = []
+
         while children:
             ipos = children.pop(0)
-            inode = a_tree.nodelist[ipos]
-            dec = a_predict(inode, a_tree)
+            inode = a_tree.nodes[ipos]
             word = a_word_access(inode[WORD]) if WORD in inode else ""
+            deps = a_tree.get_dependencies_simple(ipos)
+            dec = a_predict(inode, a_tree)
             if dec is None or dec == NO_MATCH_STRING:
                 # if the node did not start any new segment on its own, then we
                 # add it to the top-most segment in the list
-                if not word is None:
+                if word is not None:
                     a_ret.append((ipos, word))
-                children[:0] = inode.get(DEPS, [])
+                children[:0] = deps
             else:
-                dseg = DiscourseSegment(a_name = dec, \
-                                            a_leaves = self.segment(a_tree, a_predict, [], \
-                                                                        a_head2pos, None, \
-                                                                        a_tree.nodelist[ipos].get(DEPS, []), \
-                                                                        a_word_access, a_strategy))
-                if not word is None:
+                # recurse
+                leaves = self.segment(
+                    a_tree, a_predict=a_predict, a_root_idx=None,
+                    a_children=deps, a_word_access=a_word_access,
+                    a_strategy=a_strategy)
+                dseg = DiscourseSegment(a_name=dec, a_leaves=leaves)
+
+                if word is not None:
                     dseg.insort((ipos, word))
                 # if strategy is GREEDY, only leave nodes which are adjacent to
                 # the root
@@ -129,7 +123,7 @@ class TreeSegmenter(object):
                     a_ret += outleaves
                 a_ret.append((dseg.leaves[0][0] if dseg.leaves else -1, dseg))
         # for GENEROUS strategy, do some post-processing
-        a_ret.sort(key = lambda el: el[0])
+        a_ret.sort(key=lambda el: el[0])
         if a_strategy == GENEROUS:
             a_ret[:] = self._unite_nonadjacent(a_ret)
         return a_ret
@@ -145,14 +139,10 @@ class TreeSegmenter(object):
         """
         chnode = None
         chtag = ""
-        iword = a_node.get(WORD, "UNK")
-        itag = a_node.get(TAG, "UNK")
         irel = a_node.get(REL, "UNK")
         ideps = a_node.get(DEPS, [])
         if irel == "TOP":
             return "HS"
-        # elif irel == "--" and itag and itag[0] != '$':
-        #     return "HS"
         else:
             for chpos in ideps:
                 chnode = a_tree.nodelist[chpos]
@@ -163,9 +153,8 @@ class TreeSegmenter(object):
                     return "ARR"
             return None
 
-    def _cnst_segment(self, a_tree, a_ret, a_predict = None, a_start = 0):
-        """
-        Method for extracting discourse segments from constitutency parse trees.
+    def _cnst_segment(self, a_tree, a_ret, a_predict=None, a_start=0):
+        """Extract discourse segments from constitutency parse trees.
 
         @param a_tree - parse tree which should be processed
         @param a_ret - target list which should be populated with segments
@@ -173,6 +162,7 @@ class TreeSegmenter(object):
         @param a_start - starting index of tokens
 
         @return list of discourse segments
+
         """
         if a_predict is None:   # find appropriate decision function
             a_predict = self.decfunc
@@ -181,13 +171,13 @@ class TreeSegmenter(object):
             a_ret.append((a_start, a_tree))
             a_start += 1
         else:
-            dec = a_predict(a_tree) # make decision about the tree
+            dec = a_predict(a_tree)  # make decision about the tree
             if dec is None:
                 for ch in a_tree:
                     a_start = self.segment(ch, a_ret, a_predict, a_start)
             else:
                 # create a new segment
-                dseg = DiscourseSegment(a_name = dec, a_leaves = [])
+                dseg = DiscourseSegment(a_name=dec, a_leaves=[])
                 # add tree leaves to the segment
                 for ch in a_tree:
                     a_start = self.segment(ch, dseg.leaves, a_predict, a_start)
@@ -257,9 +247,9 @@ class TreeSegmenter(object):
         right_leaves = []
         cur_node = None
         prev_wseg = nxt_wseg = None
-        cur_start = cur_end = nxt_end = wseg_end = -1
-        nxt_start = nxt_end = -1
-        i = 0; max_i = len(a_word_seg)
+        cur_start = cur_end = wseg_end = -1
+        i = 0
+        max_i = len(a_word_seg)
         while i < max_i:
             cur_start, cur_node = a_word_seg[i]
             i += 1
@@ -287,7 +277,8 @@ class TreeSegmenter(object):
                     #     cur_node.insort(rl)
                     cur_node.leaves += right_leaves
                     del right_leaves[:]
-                    cur_node.leaves.sort(key = lambda el: el[0])
-                    cur_node.leaves[:] = self._unite_nonadjacent(cur_node.leaves)
+                    cur_node.leaves.sort(key=lambda el: el[0])
+                    cur_node.leaves[:] = \
+                        self._unite_nonadjacent(cur_node.leaves)
             word_seg.append((cur_start, cur_node))
         return word_seg

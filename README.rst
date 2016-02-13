@@ -9,11 +9,12 @@ Discourse Segmenter
 
 A collection of various discourse segmenters (with pre-trained models for German texts).
 
+
 Description
 ===========
 
-This python module currently comprises two discourse segmenters:
-**edseg** and **bparseg**.
+This python module currently comprises three discourse segmenters:
+**edseg**, **bparseg**, and **mateseg**.
 
 **edseg**
  is a rule-based system that uses shallow discourse-oriented
@@ -30,7 +31,16 @@ This python module currently comprises two discourse segmenters:
  language using your own training data (cf. ``discourse_segmenter
  --help`` for further instructions on how to do that).
 
+**mateseg**
+ is an ML-based segmentation module that operates on syntactic
+ dependency trees (output from Mate_) and decides whether a
+ sub-structure of the dependency graph initiates a discourse segment
+ or not using a pre-trained linear SVM model.  Again, this model was
+ trained on the German PCC_ corpus.
+
+
 *Since the current model is a serialized file and, therefore, likely  to be incompatible with future releases of `numpy`, we will probably  remove the model files from future versions of this package,  including source data instead and performing training during the  installation.*
+
 
 Installation
 ============
@@ -46,8 +56,9 @@ repository by executing:
 
 .. code-block:: shell
 
-    git clone git@github.com:WladimirSidorenko/DiscourseSegmenter.git
+    git clone git@github.com:discourse-lab/DiscourseSegmenter.git
     pip install -r DiscourseSegmenter/requirements.txt DiscourseSegmenter/ --user
+
 
 Usage
 =====
@@ -72,7 +83,29 @@ Note that this script requires two mandatory arguments: the type of
 the segmenter to use (`bparseg` in the above case) and the operation
 to perform (which are specific to each segmenter).
 
+
+Evaluation
+==========
+
+Intrinsic evaluation scores of the machine learning models on the
+predicted vectors will be printed when training and evaluating a
+segmentation model.
+
+Extrinsic evaluation scores on the predicted segmentation trees can be
+calculated with the evaluation script.
+
+.. code-block:: shell
+
+    evaluation {FOLDER:TRUE} {FOLDER:PRED}
+
+Note, that the script internally calls the `DKpro agreement library`_,
+which requires Java 8.
+
+
+
 .. _`Bitpar`: http://www.cis.uni-muenchen.de/~schmid/tools/BitPar/
+.. _`Mate`: http://code.google.com/p/mate-tools/
 .. _`PCC`: http://www.lrec-conf.org/proceedings/lrec2014/pdf/579_Paper.pdf
-.. _`here`: https://github.com/WladimirSidorenko/DiscourseSegmenter/blob/master/scripts/discourse_segmenter
-.. _`submodule's file`: https://github.com/WladimirSidorenko/DiscourseSegmenter/blob/master/dsegmenter/edseg/clause_segmentation.py
+.. _`here`: https://github.com/discourse-lab/DiscourseSegmenter/blob/master/scripts/discourse_segmenter
+.. _`submodule's file`: https://github.com/discourse-lab/DiscourseSegmenter/blob/master/dsegmenter/edseg/clause_segmentation.py
+.. _`DKpro agreement library`: https://dkpro.github.io/dkpro-statistics/
