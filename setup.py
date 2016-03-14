@@ -42,6 +42,7 @@ setup(
     install_requires=["numpy>=1.9.2",
                       "scipy>=0.16.0",
                       "nltk>=3.0.2",
+                      "pip>=8.1.0",
                       "scikit.learn>=0.15.2",
                       "segeval>=2.0.11"],
     provides=["dsegmenter (0.0.1)"],
