@@ -10,14 +10,11 @@ addons:
     packages:
       - libatlas3gf-base
       - libatlas-dev
-      # only required by the DISTRIB="ubuntu" build:
-      - python-scipy
 
 python:
   - pypy
   - 2.6
   - 2.7
-  - 3.4
 
 # command to install dependencies
 before_install:
