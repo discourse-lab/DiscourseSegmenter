@@ -40,7 +40,7 @@ setup(
                                path.join("data", "*.model")],
         "dsegmenter.mateseg": [path.join("data", "mate.model")]},
     install_requires=["numpy>=1.9.2",
-                      "scipy>=0.16.0",
+                      "scipy>=0.9",
                       "nltk>=3.0.2",
                       "pip>=8.1.0",
                       "scikit.learn>=0.15.2",
