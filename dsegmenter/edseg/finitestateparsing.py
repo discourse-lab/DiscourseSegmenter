@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8 -*-
 
-##################################################################
-# Documentation
-"""
-Module providing parsing routines based on finite-state mechanisms.
+"""Module providing parsing routines based on finite-state mechanisms.
 
 Constants:
 
 Methods:
-constraint - function decorator making function execution safe against internal failures
+
+constraint - function decorator making function execution safe against internal
+failures
 
 Classes:
 Tree - auxiliary tree class used for constructing segment nodes
@@ -21,7 +20,8 @@ Exceptions:
 Overflow - exception raised by SymTab class when buffer overflows
 
 @author = Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <vancoppenolle at uni dash potsdam dot de>, <sidarenk at uni dash potsdam dot de>
+@mail = <vancoppenolle at uni dash potsdam dot de>,
+<sidarenk at uni dash potsdam dot de>
 
 """
 
@@ -36,15 +36,19 @@ import re
 import sys
 import warnings
 
+
 ##################################################################
 # Methods
 def constraint(func):
-    """
-    Function decorator making function execution safe against internal failures.
+    """Decorator making function execution safe against internal failures.
 
-    @param func - reference to function which should be decorated
+    Args:
+    func (method):
+    reference to function which should be decorated
 
-    @return self
+    Returns:
+    self
+
     """
     @wraps(func)
     def decorate(match):
@@ -55,6 +59,7 @@ def constraint(func):
             warnings.warn('Exception in constraint: {0}'.format(exc))
         return False
     return decorate
+
 
 ##################################################################
 # Classes
@@ -305,10 +310,12 @@ class Tree(object):
 
     @property
     def is_preterminal(self):
-        """
-        Check if all of node's children are terminals
+        """Check if all of node's children are terminals
 
-        @return \c true if all of node's children are terminals, \c false otherwise
+        Returns:
+        (bool):
+        true if all of node's children are terminals, false otherwise
+
         """
         return not any(isinstance(child, Tree) for child in self)
 
@@ -340,9 +347,10 @@ class Tree(object):
                     yield terminal
 
     def pretty_print(self, a_stream=sys.stdout, a_depth=0, a_indent='    ',
-                     a_term_print=lambda term: u'{form}/{pos}'.format(form=term['form'], \
-                                                                        pos=term['pos']),
-                     a_feat_print=lambda feat: u'{0}={1}'.format(feat[0], feat[1]),
+                     a_term_print=lambda term: u'{form}/{pos}'.format(
+                         form=term['form'], pos=term['pos']),
+                     a_feat_print=lambda feat: u'{0}={1}'.format(
+                         feat[0], feat[1]),
                      a_encoding='utf-8'):
         """
         Output nice string representation of the current tree
@@ -356,18 +364,22 @@ class Tree(object):
 
         @return \c void
         """
-        emit = lambda out: a_stream.write('{0}{1}'.format(a_indent * a_depth, out))
+        emit = lambda out: a_stream.write('{0}{1}'.format(
+            a_indent * a_depth, out))
         if self.feats:
             feat_str = ','.join(a_feat_print(item)
                                 for item in self.feats.iteritems())
-            emit('({0} [{1}]\n'.format(self.label, feat_str.encode(a_encoding)))
+            emit('({0} [{1}]\n'.format(self.label,
+                                       feat_str.encode(a_encoding)))
         else:
             emit('({0}\n'.format(self.label))
         for child in self:
             if hasattr(child, 'pretty_print'):
-                child.pretty_print(a_stream = a_stream, a_depth = a_depth + 1,
-                                   a_indent = a_indent, a_term_print = a_term_print,
-                                   a_feat_print = a_feat_print, a_encoding = a_encoding)
+                child.pretty_print(a_stream=a_stream, a_depth=a_depth + 1,
+                                   a_indent=a_indent,
+                                   a_term_print=a_term_print,
+                                   a_feat_print=a_feat_print,
+                                   a_encoding=a_encoding)
             else:
                 emit('{0}{1}\n'.format(a_indent,
                                        a_term_print(child).encode(a_encoding)))
@@ -387,7 +399,8 @@ class Tree(object):
             if isinstance(child, Tree):
                 ostring += str(child) + '\n'
             else:
-                ostring += u'{form}/{pos}'.format(form=child['form'], pos=child['pos'])
+                ostring += u'{form}/{pos}'.format(
+                    form=child['form'], pos=child['pos'])
         ostring += ")\n"
         return ostring
 
@@ -412,10 +425,12 @@ class SymTab(object):
     """
 
     class Overflow(Exception):
-        """
-        Custom exception thrown when the number of mapped strings exceeds capacity
+        """Custom exception.
+
+        Thrown when the number of mapped strings exceeds capacity
 
         This class subclasses `Exception`
+
         """
 
         pass
@@ -469,11 +484,12 @@ class MatchProxy(object):
     """
 
     def __init__(self, match, nodes):
-        """
-        Class constructor
+        """Class constructor
 
         @param match - reference to rule match
-        @param nodes - reference to the list of nodes to which match was applied
+        @param nodes - reference to the list of nodes to which match was
+        applied
+
         """
         self._match = match
         self._nodes = nodes
@@ -489,9 +505,9 @@ class MatchProxy(object):
         start, end = self._match.start(group), self._match.end(group)
         return self._nodes[start:end]
 
+
 class FiniteStateParser(object):
-    """
-    Match engine used for matching rules
+    """Match engine used for matching rules
 
     Class methods:
     from_file - create an automaton instance from file with rules
@@ -508,19 +524,22 @@ class FiniteStateParser(object):
     _rules - internal mapping from rule levels to compiled rules
 
     Public methods:
-    add_rule - convert symbolic rule to a regular expression and add it to common automaton
+    add_rule - convert symbolic rule to a regular expression and add it to
+    common automaton
     define - add macro definition to the current set of rules
     parse - parse given rules instance and add it to the rule cascade
+
     """
 
     _RE_VAR = re.compile('(%[^%]+%)', re.I)
     _RE_CAT = re.compile('(?<!P)<(?!=)([^>]+)>', re.I)
 
     def __init__(self, root_cat='ROOT'):
-        """
-        Class constructor
+        """Class constructor
 
-        @param root_cat - label to be used for the root node of the constructed tree
+        @param root_cat - label to be used for the root node of the constructed
+        tree
+
         """
         self.root_cat = root_cat
         self.cats = set()
@@ -578,8 +597,7 @@ class FiniteStateParser(object):
 
     def add_rule(self, lhs, rhs, level=0, constraint=None, group=0,
                  feats=None):
-        """
-        Convert symbolic rule to a regular expression and add it to common automaton
+        """Convert rule to regexp and add it to common automaton
 
         @param lhs - left hand side of the rule (is used for matching)
         @param rhs - left hand side of the rule (is used as replacement)
@@ -589,6 +607,7 @@ class FiniteStateParser(object):
         @param feats - custom function for extracting features from nodes
 
         @return self
+
         """
         if level < 0:
             raise ValueError('level must be a positive number')
@@ -600,7 +619,7 @@ class FiniteStateParser(object):
                                         'feats': feats})
         return self
 
-    def parse(self, tokens, catgetter = lambda tok: tok):
+    def parse(self, tokens, catgetter=lambda tok: tok):
         """
         Parse given rules instance and add it to the rule cascade
 
@@ -610,7 +629,7 @@ class FiniteStateParser(object):
         @return newly constructed segment tree
         """
         nodes = tokens
-        for lvl, rules in sorted(self._rules.iteritems(), key = itemgetter(0)):
+        for lvl, rules in sorted(self._rules.iteritems(), key=itemgetter(0)):
             nodes = self._parse_level(rules, nodes, catgetter)
         return Tree(self.root_cat, nodes)
 
@@ -634,7 +653,8 @@ class FiniteStateParser(object):
                             flag = constraint(proxy)
                         except Exception as exc:
                             flag = False
-                            warnings.warn('Exception in constraint: {0}'.format(lhs, exc))
+                            warnings.warn('Exception in constraint:'
+                                          ' {0}'.format(lhs, exc))
                             raise
                         if not flag:
                             continue
@@ -664,7 +684,7 @@ class FiniteStateParser(object):
 
     def _replace_vars(self, pattern):
         return self._RE_VAR.sub(lambda match: self._vars[match.group(1)[1:-1]],
-                                              pattern)
+                                pattern)
 
     def _compile_rhs(self, rhs):
         rhs = self._replace_vars(rhs)

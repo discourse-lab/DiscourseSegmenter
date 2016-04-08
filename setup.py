@@ -1,17 +1,36 @@
 #!/usr/bin/env python
+# -*- mode: python; coding: utf-8; -*-
 
 ##################################################################
 # Libraries
-from distutils.core import setup
+from setuptools import setup
 from os import path
 import codecs
 import glob
 
 ##################################################################
 # Variables and Constants
-pwd = path.abspath(path.dirname(__file__))
-with codecs.open(path.join(pwd, "README.rst"), encoding="utf-8") as ifile:
+PWD = path.abspath(path.dirname(__file__))
+ENCODING = "utf-8"
+
+with codecs.open(path.join(PWD, "README.rst"), encoding="utf-8") as ifile:
     long_description = ifile.read()
+
+INSTALL_REQUIRES = []
+with codecs.open(path.join(PWD, "requirements.txt"),
+                 encoding=ENCODING) as ifile:
+    for iline in ifile:
+        iline = iline.strip()
+        if iline:
+            INSTALL_REQUIRES.append(iline)
+
+TEST_REQUIRES = []
+with codecs.open(path.join(PWD, "test-requirements.txt"),
+                 encoding=ENCODING) as ifile:
+    for iline in ifile:
+        iline = iline.strip()
+        if iline:
+            TEST_REQUIRES.append(iline)
 
 ##################################################################
 # setup()
@@ -29,9 +48,6 @@ setup(
     packages=["dsegmenter", "dsegmenter.bparseg", "dsegmenter.edseg",
               "dsegmenter.treeseg", "dsegmenter.mateseg",
               "dsegmenter.evaluation"],
-    # package_dir = {"dsegmenter.bparseg": "dsegmenter",
-    #                "dsegmenter.edseg": "dsegmenter",
-    #                "dsegmenter.treeseg": "dsegmenter"},
     package_data={
         "dsegmenter.edseg": [path.join("data", fname) for fname in (
             "dass_verbs.txt", "discourse_preps.txt", "finite_verbs.txt",
@@ -39,12 +55,9 @@ setup(
         "dsegmenter.bparseg": [path.join("data", "*.npy"),
                                path.join("data", "*.model")],
         "dsegmenter.mateseg": [path.join("data", "mate.model")]},
-    install_requires=["numpy>=1.9.2",
-                      "scipy>=0.9",
-                      "nltk>=3.0.2",
-                      "pip>=8.1.0",
-                      "scikit.learn>=0.15.2",
-                      "segeval>=2.0.11"],
+    install_requires=INSTALL_REQUIRES,
+    setup_requires=["pytest-runner"],
+    tests_require=TEST_REQUIRES,
     provides=["dsegmenter (0.0.1)"],
     scripts=[path.join("scripts", "discourse_segmenter"),
              path.join("scripts", "evaluation"),

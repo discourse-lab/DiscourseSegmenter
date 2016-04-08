@@ -19,7 +19,8 @@ Exceptions:
 UnificationFailure - exception raise on non-merged feature bits
 
 @author = Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <vancoppenolle at uni dash potsdam dot de>, <sidarenk at uni dash potsdam dot de>
+@mail = <vancoppenolle at uni dash potsdam dot de>,
+        <sidarenk at uni dash potsdam dot de>
 
 """
 
@@ -30,20 +31,22 @@ from .finitestateparsing import constraint, FiniteStateParser
 from copy import deepcopy
 import sys
 
+
 ##################################################################
 # Methods
 def catgetter(token):
     return token['pos']
+
 
 ##################################################################
 # Exceptions
 class UnificationFailure(Exception):
     pass
 
+
 ##################################################################
 class FeatureMatrix(object):
-    """
-    Class for converting CONLL features to bit matrices.
+    """Class for converting CONLL features to bit matrices.
 
     Class constants:
     FEATS - nominal names of the features
@@ -54,11 +57,13 @@ class FeatureMatrix(object):
 
     Public methods:
     from_string - initiate feature matrix from string representation
-    from_dict - initiate feature matrix from dictionary of feature names and values
+    from_dict - initiate feature matrix from dictionary of feature names and
+                values
     unify - make an intersection of features in the current matrix with the
             features from another instance
     unifies - check if the intersection of the current feature matrix with
               the matrix from another instance is not empty
+
     """
 
     FEATS = [
@@ -117,12 +122,12 @@ class FeatureMatrix(object):
         return cls([v for v in feat_dict.itervalues()])
 
     def unify(self, other):
-        """
-        Intersect features in the current matrix with the features from another instance
+        """Intersect current features with the features from another instance
 
         @param other - another FeatureMatrix instance
 
         @return this FeatureMatrix instance
+
         """
         if not hasattr(other, '_bits'):
             return False
@@ -133,12 +138,12 @@ class FeatureMatrix(object):
         return self
 
     def unifies(self, other):
-        """
-        Check if intersection of the current instance with another instance is not empty
+        """Check if intersection with another instance is not empty
 
         @param other - another FeatureMatrix instance
 
         @return this FeatureMatrix instance
+
         """
         if not hasattr(other, '_bits'):
             return False
@@ -149,6 +154,7 @@ class FeatureMatrix(object):
 
     def __str__(self):
         return bin(self._bits)[2:]
+
 
 ##################################################################
 class Chunker(object):
@@ -216,19 +222,19 @@ class Chunker(object):
                                             'Dezember')
 
         add_rule('NC',
-            '''
-            (?:
-                ^
-            |
-                [^<ART><CARD><PDAT><PDS><PIAT><PPOSAT>]
-            )
-            (
-                (<NN>)
-                (<NN>)
-            )
-            ''',
-            constraint=nc_month_spec_constraint,
-            group=1, level=1)
+                 '''
+                 (?:
+                 ^
+                 |
+                 [^<ART><CARD><PDAT><PDS><PIAT><PPOSAT>]
+                 )
+                 (
+                 (<NN>)
+                 (<NN>)
+                 )
+                 ''',
+                 constraint=nc_month_spec_constraint,
+                 group=1, level=1)
 
         @constraint
         def nc_det_noun_agreement(match):
@@ -246,47 +252,47 @@ class Chunker(object):
             return True
 
         add_rule('NC',
-            '''
-            (?:
-                (<ART>)<PIAT>?
-            |
-                [<CARD><PDAT><PDS><PIAT><PPOSAT>]
-            )?
-            (?:
-                (?:
-                    <ADJA><ADJA>?
-                )
-                (?:
-                    <$,>
-                    (?:
-                        <ADJA><ADJA>?
-                    )
+                 '''
+                 (?:
+                 (<ART>)<PIAT>?
+                 |
+                 [<CARD><PDAT><PDS><PIAT><PPOSAT>]
+                 )?
+                 (?:
+                 (?:
+                 <ADJA><ADJA>?
+                 )
+                 (?:
+                 <$,>
+                 (?:
+                 <ADJA><ADJA>?
+                 )
                 )*
-            )?
-            ([<NE><NN>])
-            ''',
-            constraint=nc_det_noun_agreement,
-            level=1)
+                 )?
+                 ([<NE><NN>])
+                 ''',
+                 constraint=nc_det_noun_agreement,
+                 level=1)
 
         add_rule('NC',
-            '''
-            (?:
-                <ART><PIAT>?
-            |
-                [<PDAT><PDS><PPOSAT><PIAT><CARD>]
-            )
-            <PC>
-            <NC>
-            ''',
-            level=3)
+                 '''
+                 (?:
+                 <ART><PIAT>?
+                 |
+                 [<PDAT><PDS><PPOSAT><PIAT><CARD>]
+                 )
+                 <PC>
+                 <NC>
+                 ''',
+                 level=3)
 
         add_rule('PC',
-            '''
-            <APPR>   # preposition
-            <NC>?
-            <PDS>
-            ''',
-            level=2)
+                 '''
+                 <APPR>   # preposition
+                 <NC>?
+                 <PDS>
+                 ''',
+                 level=2)
 
         @constraint
         def pc_genitive_adjunct_constraint(match):
@@ -296,72 +302,72 @@ class Chunker(object):
             art = node.first_child
             if art is None or art['pos'] != 'ART':
                 return False
-            if (not 'feats' in art) or (not hasattr(art['feats'], 'unifies')):
+            if (not 'feats' in art) or not hasattr(art['feats'], 'unifies'):
                 return False
             return art['feats'].unifies(FeatureMatrix('gen'))
 
         add_rule('PC',
-            '''
-            [<APPR><APRRART>]
-            <NC>
-            (?:
-                <KON>
-                <NC>
-            )*
-            (<NC>)
-            (?:
-                <PDS>
-            |
-                [<APZR><PROAV>]    # optional circumposition or pronominal adverb
-            )?
-            ''',
-            constraint=pc_genitive_adjunct_constraint,
-            level=2)
+                 '''
+                 [<APPR><APRRART>]
+                 <NC>
+                 (?:
+                 <KON>
+                 <NC>
+                 )*
+                 (<NC>)
+                 (?:
+                 <PDS>
+                 |
+                 [<APZR><PROAV>]
+                 )?
+                 ''',
+                 constraint=pc_genitive_adjunct_constraint,
+                 level=2)
 
         add_rule('PC',
-            '''
-            [<APPR><APPRART>]   # preposition
-            <APPR>?             # optional embedded preposition ("bis an das Ende")
-            (?:
-                <ADV>           # adverbial chunk ("von damals")
-                (?:             # optional conjunction
-                    <KON>
-                    <ADV>
-                )?
-            |
-                <CARD>          # cardinal ("bis 1986")
-                (?:             # optional conjunction
-                    <KON>
-                    <CARD>
-                )?
-            |
-                <NC>            # noun chunk
-                (?:             # optional conjunction
-                    <KON>
-                    <NC>
-                )?
-            )
-            [<APZR><PROAV>]?    # optional circumposition or pronominal adverb
-            ''',
-            level=2)
+                 '''
+                 [<APPR><APPRART>]   # preposition
+                 <APPR>?             # ("bis an das Ende")
+                 (?:
+                 <ADV>           # adverbial chunk ("von damals")
+                 (?:             # optional conjunction
+                 <KON>
+                 <ADV>
+                 )?
+                 |
+                 <CARD>          # cardinal ("bis 1986")
+                 (?:             # optional conjunction
+                 <KON>
+                 <CARD>
+                 )?
+                 |
+                 <NC>            # noun chunk
+                 (?:             # optional conjunction
+                 <KON>
+                 <NC>
+                 )?
+                 )
+                 [<APZR><PROAV>]?    # optional pronominal adverb
+                 ''',
+                 level=2)
 
         add_rule('AC',
-            '''
-            <ADV>*
-            <PTKNEG>?
-            <ADJD>+
-            ''',
-            level=3)
+                 '''
+                 <ADV>*
+                 <PTKNEG>?
+                 <ADJD>+
+                 ''',
+                 level=3)
 
         add_rule('AC',
-            '''
-            <PTKA>?
-            <ADV>+
-            ''',
-            level=3)
+                 '''
+                 <PTKA>?
+                 <ADV>+
+                 ''',
+                 level=3)
 
         add_rule('AC',
-            '''
-            <PROAV>
-            ''',
-            level=3)
+                 '''
+                 <PROAV>
+                 ''',
+                 level=3)

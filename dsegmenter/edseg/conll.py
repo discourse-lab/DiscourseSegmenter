@@ -3,8 +3,7 @@
 
 ##################################################################
 # Documentation
-"""
-This module provides a convenient interface for handling CONLL data.
+"""This module provides a convenient interface for handling CONLL data.
 
 CONLL data are represented in the form of individual lines with tab-separated
 fields.  This module provides several classes which parse such lines either
@@ -23,7 +22,8 @@ FEAT_VALUE_SEP_RE - regular expression corresponding to FEAT_VALUE_SEP
 
 Classes:
 CONLL()         - class for handling CONLL forrests
-CONLLSentence() - class storing information pertaining to a single CONLL sentence
+CONLLSentence() - class storing information pertaining to a single CONLL
+sentence
 CONLLWord()     - class storing information about a single CONLL word
 
 """
@@ -36,15 +36,15 @@ import re
 ##################################################################
 # Interface
 __name__ = "conll"
-__all__ = ["EOS", "EOL", "EOS_TAG", "FIELDSEP", "EMPTY_FIELD", \
-               "FEAT_SEP", "FEAT_VALUE_SEP", "FEAT_VALUE_SEP_RE", \
-               "CONLL", "CONLLSentence", "CONLLWord"]
+__all__ = ["EOS", "EOL", "EOS_TAG", "FIELDSEP", "EMPTY_FIELD",
+           "FEAT_SEP", "FEAT_VALUE_SEP", "FEAT_VALUE_SEP_RE",
+           "CONLL", "CONLLSentence", "CONLLWord"]
 
 ##################################################################
 # Constants
-EOS      = '\n'
-EOL      = '\n'
-EOS_TAG  = "<s />"
+EOS = '\n'
+EOL = '\n'
+EOS_TAG = "<s />"
 FIELDSEP = '\t'
 EMPTY_FIELD = '_'
 
@@ -67,30 +67,32 @@ class CONLL(object):
 
     This class provides following public methods:
     __init__()      - class constructor (can accept)
+
     self.add_line() - parse specified single line and incrementally add
-                      it to the data of current tree or append a new tree to the
-                      forrest
+                      it to the data of current tree or append a new tree
+                      to the forrest
     self.is_empty() - return true if no sentences are stored
     self.clear() - drop all stored information
-    self.get_words() - return list of words with their sentence and word indices
+    self.get_words() - return list of words with their sentence and word
+                       indices
     __str__()       - return string representation of current forrest
     __getitem__()   - return sentence from forrest
     __setitem__()   - set sentence in forrest
     """
 
-    def __init__(self, istring = ''):
+    def __init__(self, istring=''):
         """Initialize instance variables and parse input string if specified.
 
         @param istring - input string(s) with CONLL data (optional)
 
         """
+        self.s_id = -1
         self.sentences = []
-        self.s_id      = -1
         self.__eos_seen__ = True
         for iline in istring.splitlines():
             self.add_line(iline)
 
-    def add_line(self, iline = u''):
+    def add_line(self, iline=u''):
         """Parse line and add it as CONLL word to either current or new
         sentence.
 
@@ -113,7 +115,8 @@ class CONLL(object):
             # word is less than the index of the last word, that means that a
             # new sentence has started.
             w = CONLLWord(iline)
-            if self.s_id == -1 or int(w.idx) < int(self.sentences[self.s_id].words[-1].idx):
+            if self.s_id == -1 or \
+               int(w.idx) < int(self.sentences[self.s_id].words[-1].idx):
                 self._add_sentence(w)
             else:
                 self.sentences[self.s_id].push_word(w)
@@ -131,7 +134,7 @@ class CONLL(object):
         Remove all stored information.
         """
         del self.sentences[:]
-        self.s_id  = -1
+        self.s_id = -1
         self.__eos_seen__ = False
 
     def get_words(self):
@@ -146,8 +149,8 @@ class CONLL(object):
         """
         retlist = []
         for s_id in xrange(self.s_id + 1):
-            retlist += [(w.form, s_id, w_id) for w, w_id in \
-                            self.sentences[s_id].get_words()]
+            retlist += [(w.form, s_id, w_id) for w, w_id in
+                        self.sentences[s_id].get_words()]
         return retlist
 
     def __unicode__(self):
@@ -224,9 +227,9 @@ class CONLLSentence(object):
 
     """
 
-    def __init__(self, iword = ""):
+    def __init__(self, iword=""):
         """Initialize instance variables and parse iline if specified."""
-        self.w_id  = -1
+        self.w_id = -1
         self.words = []
         self.children = defaultdict(list)
         if iword:
@@ -234,13 +237,13 @@ class CONLLSentence(object):
 
     def clear(self):
         """Remove all words and reset counters."""
-        self.w_id  = -1
+        self.w_id = -1
         self.children.clear()
         del self.words[:]
 
     def is_empty(self):
         """Check if any words are present in sentence."""
-        return self.w_id  == -1
+        return self.w_id == -1
 
     def push_word(self, iword):
         """Parse iline storing its information in instance variables."""
@@ -306,6 +309,7 @@ class CONLLSentence(object):
         """Return the number of words in sentence."""
         return len(self.words)
 
+
 class CONLLWord(object):
 
     """Class for storing and manipulating information about a single word.
@@ -332,17 +336,18 @@ class CONLLWord(object):
     __getitem__()  - this method allows access to CONLLWord field using
                      the standard dictionary like syntax, e.g. iword["token]
     __setitem__()   - this method allows to set values of CONLLWord fields by
-                      using the dictionary like syntax, e.g. iword["token] = "sky"
+                      using the dictionary like syntax,
+                      e.g., iword["token] = "sky"
     __str__()       - return string representation of current forrest
 
     """
 
-    key2field = {'idx': 0, 'form': 1, 'pform': 2, 'lemma': 3, 'plemma': 4, 'pos': 5, \
-                     'ppos': 6, 'feat': 7, 'head': 8, 'phead': 9, 'deprel': 10, \
-                     'pdeprel': 11, 'fillpred': 12, 'pred': 13}
+    key2field = {'idx': 0, 'form': 1, 'pform': 2, 'lemma': 3, 'plemma': 4,
+                 'pos': 5, 'ppos': 6, 'feat': 7, 'head': 8, 'phead': 9,
+                 'deprel': 10, 'pdeprel': 11, 'fillpred': 12, 'pred': 13}
     REQFIELDS = len(key2field)
 
-    def __init__(self, iline = None):
+    def __init__(self, iline=None):
         """Initialize instance variables and parse iline if specified."""
         self.fields = []
         self.features = {}
@@ -355,26 +360,44 @@ class CONLLWord(object):
         nfields = len(self.fields)
         # check that proper number of fields is provided
         if nfields != self.REQFIELDS:
-            raise Exception( \
-                "Incorrect line format ({:d} fields expected instead of {:d}):\n'{:s}'".format( \
+            raise Exception(
+                "Incorrect line format ({:d} fields"
+                " expected instead of {:d}):\n'{:s}'".format(
                     self.REQFIELDS, nfields, iline))
         # convert features and pfeatures to dicts
         feat_i = CONLLWord.key2field["feat"]
-        self.features = self.fields[feat_i] = self._str2dict(self.fields[feat_i])
+        self.features = self.fields[feat_i] = \
+            self._str2dict(self.fields[feat_i])
 
-    def add_features(self, newfeatures = {}):
-        """Update dictionary of features with new features from `newfeatures'."""
+    def add_features(self, newfeatures={}):
+        """Update dictionary of features with new features."""
         self.features.update(newfeatures)
 
-    def get(self, ikey, idefault = None):
-        """Return value of ikey field or idefault if the field is not present."""
+    def get(self, ikey, idefault=None):
+        """Return value of ikey field or idefault if the field is missing."""
         try:
             return self.__getattr__(ikey)
         except AttributeError:
             return idefault
 
+    def __contains__(self, name):
+        """Check if field is present in item.
+
+        This method looks for the passed field name in `key2field` dict and
+        returns true if the name is found and false otherwise.
+
+        Args:
+        name (str): name of the field to be retrieved
+
+        Returns:
+        (bool):
+        true if the given field name is found in item
+
+        """
+        return name in self.key2field
+
     def __getattr__(self, name):
-        """Return self.field's item if this item's name is present in key2field.
+        """Return field's item if this item's name is present in key2field.
 
         This method looks for passed name in `key2field` dict and returns
         corresponding item of `self.fields` or raises an AttributeException
@@ -386,10 +409,10 @@ class CONLLWord(object):
         if name in self.key2field:
             return self.fields[self.key2field[name]]
         else:
-            raise AttributeError("cannot find symbol {:s}".format(name))
+            raise AttributeError("Cannot find symbol {:s}".format(name))
 
     def __getitem__(self, name):
-        """Return self.field's item if this item's name is present in key2field.
+        """Return field's item if this item's name is present in key2field.
 
         This method uses the self.__getattr__() method but converts the
         AttributeException to IndexError in case when lookup was not
@@ -430,7 +453,7 @@ class CONLLWord(object):
             retStr += FIELDSEP
         retStr += feat_str
         if feat_i < self.REQFIELDS:
-            retStr +=  FIELDSEP
+            retStr += FIELDSEP
         # add the rest of the fields
         retStr += FIELDSEP.join(self.fields[feat_i + 1:])
         return retStr
@@ -439,7 +462,7 @@ class CONLLWord(object):
         """Return string representation of this object encoded in UTF-8."""
         return self.__unicode__().encode("utf-8")
 
-    def _dict2str(self, idict, new_format = True):
+    def _dict2str(self, idict, new_format=True):
         """Convert dictionary of features to a string."""
         fList = []
         if not idict:

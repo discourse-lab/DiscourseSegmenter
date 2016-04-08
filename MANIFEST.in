@@ -3,7 +3,7 @@ include README.rst
 include requirements.txt
 include dsegmenter/bparseg/data/*.model
 include dsegmenter/bparseg/data/*.npy
-include dsegmenter/bparseg/data/mate.model
+include dsegmenter/mateseg/data/mate.model
 include dsegmenter/edseg/data/*.txt
 include dsegmenter/evaluation/alpha/*
 recursive-include examples *
