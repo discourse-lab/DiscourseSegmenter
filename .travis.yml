@@ -10,6 +10,8 @@ addons:
     packages:
       - libatlas3gf-base
       - libatlas-dev
+      - liblapack-dev
+      - libblas-dev
 
 # virtualenv:
 #     system_site_packages: true
