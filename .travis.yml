@@ -15,7 +15,7 @@ cache:
 addons:
   apt:
     packages:
-      - gcc
+      - gfortran
       - libatlas3gf-base
       - libatlas-dev
       - liblapack-dev
