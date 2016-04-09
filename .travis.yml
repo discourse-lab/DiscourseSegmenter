@@ -15,14 +15,10 @@ virtualenv:
     system_site_packages: true
 
 python:
-  - pypy
-  - 2.6
   - 2.7
 
 # command to install dependencies
 before_install:
- - sudo apt-get install python-numpy
- - sudo apt-get install python-scipy
  - pip install -r requirements.txt
 
 install: ./setup.py build install
