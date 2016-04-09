@@ -41,7 +41,3 @@ install:
 # Run test
 script:
   - ./setup.py test
-
-# Calculate coverage
-after_success:
-  - coveralls --config_file .coveragerc
