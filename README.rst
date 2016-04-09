@@ -2,6 +2,11 @@
 Discourse Segmenter
 ===================
 
+.. image:: https://travis-ci.org/WladimirSidorenko/DiscourseSegmenter.svg?branch=master
+   :alt: Build Status
+   :align: right
+   :target: https://travis-ci.org/WladimirSidorenko/DiscourseSegmenter
+
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :alt: MIT License
    :align: right
