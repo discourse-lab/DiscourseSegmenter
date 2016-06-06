@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8; -*-
 
-"""
-Parse input text into elementary discourse segments and output them
+"""Parse input text into elementary discourse segments.
 
 USAGE:
 discourse_segmenter [GLOBAL_OPTIONS] type [TYPE_SPECIFIC_OPTIONS] [FILEs]
-
-@author: Wladimir Sidorenko <Uladzimir Sidarenka>
 
 """
 
@@ -40,34 +37,44 @@ SEGMENT = "segment"
 Segmenter = None
 N_FOLDS = 10
 
+
 ##################################################################
 # Methods
 def _set_train_test_args(a_parser):
     """Add CLI options common to train and test mode to ArgumentParser instance.
 
-    @param a_parser - ArgumentParser instance to which new arguments should
-                      be added
+    Args:
+      a_parser (argparse.ArgumentParser): ArgumentParser instance to which new
+        arguments should be added
 
-    @return \c void
+    Returns:
+      void:
 
     """
-    a_parser.add_argument("--bpar-sfx", help = """suffix of the names of BitPar files""", \
-                              type = str, default = "")
-    a_parser.add_argument("--seg-sfx", help = """suffix of the names of segmentation files""", \
-                              type = str, default = "")
-    a_parser.add_argument("bpar_dir", help="directory containing BitPar files", \
-                              type = str)
-    a_parser.add_argument("seg_dir", help="directory containing segmentation files", \
-                              type = str)
+    a_parser.add_argument("--bpar-sfx",
+                          help="suffix of the names of BitPar files",
+                          type=str, default="")
+    a_parser.add_argument("--seg-sfx",
+                          help="suffix of the names of segmentation files",
+                          type=str, default="")
+    a_parser.add_argument("bpar_dir",
+                          help="directory containing BitPar files",
+                          type=str)
+    a_parser.add_argument("seg_dir",
+                          help="directory containing segmentation files",
+                          type=str)
 
-def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
+
+def _read_files(a_files, a_encoding=DEFAULT_ENCODING, a_skip_line=""):
     """Return iterator over lines of the input file.
 
-    @param a_files - files to read from
-    @param a_encoding - text encoding used for input/output
-    @param a_skip_line - line which should be skipped during iteration
+    Args:
+      a_files (list): files to read from
+      a_encoding (str): text encoding used for input/output
+      a_skip_line (str): line which should be skipped during iteration
 
-    @return iterator over input lines
+    Yields:
+      input lines
 
     """
     if not a_files:
@@ -79,22 +86,26 @@ def _read_files(a_files, a_encoding = DEFAULT_ENCODING, a_skip_line = ""):
                 yield line.rstrip()
     else:
         for fname in a_files:
-            with codecs.open(fname, encoding = a_encoding, errors = "replace") as ifile:
+            with codecs.open(fname,
+                             encoding=a_encoding, errors="replace") as ifile:
                 for line in ifile:
                     if line == a_skip_line:
                         print(line.encode(a_encoding))
                     else:
                         yield line.rstrip()
 
+
 def _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx):
     """Align BitPar and segment files in two directories.
 
-    @param a_bpar_dir - directory containing files with BitPar trees
-    @param a_seg_dir - directory containing files with discourse segments
-    @param a_bpar_sfx - suffix of the names of BitPar files
-    @param a_seg_sfx - suffix of the names of segmentation files
+    Args:
+      a_bpar_dir (str): directory containing files with BitPar trees
+      a_seg_dir (str): directory containing files with discourse segments
+      a_bpar_sfx (str): suffix of the names of BitPar files
+      a_seg_sfx (str): suffix of the names of segmentation files
 
-    @return iterator over list of 2-tuples with BitPar and segment file
+    Yields:
+      2-tuples with BitPar and segment file
 
     """
     segf = ""; basefname = "";
@@ -106,22 +117,26 @@ def _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx):
         if os.path.isfile(segf) and os.access(segf, os.R_OK):
             yield (bpf, segf)
         else:
-            print(\
-                "WARNING: No counterpart file found for BitPar file '{:s}'.".format(bpf), \
-                    file = sys.stderr)
+            print(
+                "WARNING: No counterpart file found for BitPar"
+                  " file '{:s}'.".format(bpf),
+                    file=sys.stderr)
 
-def _read_trees_segments(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx, \
-                             a_fname2item = False, a_encoding = DEFAULT_ENCODING):
+
+def _read_trees_segments(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx,
+                             a_fname2item=False, a_encoding=DEFAULT_ENCODING):
     """Read input files containing discourse segments and BitPar trees.
 
-    @param a_bpar_dir - directory containing files with BitPar trees
-    @param a_seg_dir - directory containing files with discourse segments
-    @param a_bpar_sfx - suffix of the names of BitPar files
-    @param a_seg_sfx - suffix of the names of segmentation files
-    @param a_fname2item - generate mappings from filenames to trees
-    @param a_encoding - text encoding used for input/output
+    Args:
+      a_bpar_dir (str): directory containing files with BitPar trees
+      a_seg_dir (str): directory containing files with discourse segments
+      a_bpar_sfx (str): suffix of the names of BitPar files
+      a_seg_sfx (str): suffix of the names of segmentation files
+      a_fname2item (bool): generate mappings from filenames to trees
+      a_encoding (str): text encoding used for input/output
 
-    @return 2-tuple with a list of segments and a list of trees
+    Returns:
+      tuple: list of segments and a list of trees
 
     """
     if a_fname2item:
@@ -144,6 +159,7 @@ def _read_trees_segments(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx, \
             ts.append(t)
             segs.append(s)
     return (trees, segments)
+
 
 def _output_segment_forrest(a_forrest, a_segmenter, a_output, a_encoding):
     """Split CONLL sentences in elementary discourse units and output them.
@@ -189,7 +205,6 @@ def edseg_segment(a_ilines, a_output_trees, a_encoding = DEFAULT_ENCODING):
         # otherwise, append the line to the CONLL forrest
         else:
             forrest.add_line(line)
-            istart = True
     # output remained EDUs
     _output_segment_forrest(forrest, segmenter, a_output_trees, a_encoding)
 
@@ -295,7 +310,7 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs, \
     fname2feats = {fname: [a_segmenter.featgen(t) for t in trees] \
                    for fname, trees in a_fname2trees.iteritems()}
     # initialize auxiliary variables
-    F1_macro = F1_micro = F1_tpfp = 0.
+    F1_tpfp = 0.
     macro_f1 = 0.; macro_F1s = []
     micro_f1 = 0.; micro_F1s = []
     best_macro_f1 = float("-inf")
