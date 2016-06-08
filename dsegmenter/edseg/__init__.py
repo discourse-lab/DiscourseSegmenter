@@ -7,25 +7,25 @@
 """
 Package providing rule-based discourse segmenter for CONLL dependency trees.
 
-Modules:
-chunking - routines for internal clause segmentation
-clause_segmentation - rule-based clause segmenter
-conll - interface for dealing with CONLL data
-data - data definitions and data reading routines
-edssegmenter - definition of rule-based discourse segmenter
-finitestateparsing - parsing routines based on finite-state mechanisms
-util - auxiliary match routines needed for rule matching
-
-@author = Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <sidarenk at uni dash potsdam dot de>
-@version = 0.0.1
+Attributes:
+  chunking (module): routines for internal clause segmentation
+  clause_segmentation (module): utilities and classes for rule-based clause
+    segmenter
+  conll (module): interface for dealing with CONLL data
+  data (module): data definitions and data reading routines
+  edssegmenter (module): definition of rule-based discourse segmenter
+  finitestateparsing (module): parsing routines based on finite-state
+    mechanisms
+  util (module): auxiliary match routines needed for rule matching
 
 """
 
 ##################################################################
 # Imports
-from .conll import CONLL
-from .edssegmenter import EDSSegmenter
+from __future__ import absolute_import
+
+from dsegmenter.edseg.conll import CONLL
+from dsegmenter.edseg.edssegmenter import EDSSegmenter
 
 ##################################################################
 # Variables and Constants

@@ -10,7 +10,8 @@ Attributes:
   _ispunct (method): check if word consists only of punctuation characters
   _prune_punc (method): remove tokens representing punctuation from set
   _translate_toks (method): replace tokens and return updated set
-  tree2tok (method): create dictionary mapping constituency trees to numbered tokens
+  tree2tok (method): create dictionary mapping constituency trees to numbered
+    tokens
   read_trees (method): read file and return a list of constituent dictionaries
   read_segments (method): read file and return a list of segment dictionaries
   trees2segs (method): align trees with corresponding segments
@@ -320,7 +321,8 @@ def featgen(a_tree):
     # add label of the parent tree
     return ret
 
-def classify(a_classifier, a_featgen, a_el, a_default = None):
+
+def classify(a_classifier, a_featgen, a_el, a_default=None):
     """Classify given element.
 
     @param a_classifier - model which should make predictions
@@ -333,7 +335,9 @@ def classify(a_classifier, a_featgen, a_el, a_default = None):
 
     """
     prediction = a_classifier.predict(a_featgen(a_el))[0]
-    return a_default if prediction is None or prediction == NONE else prediction
+    return a_default if prediction is None or \
+        prediction == NONE else prediction
+
 
 ##################################################################
 # Class
@@ -343,18 +347,19 @@ class BparSegmenter(object):
     """
 
     #: classifier object: default classification method
-    DEFAULT_CLASSIFIER = LinearSVC(C = 0.3, multi_class = 'crammer_singer')
+    DEFAULT_CLASSIFIER = LinearSVC(C=0.3, multi_class='crammer_singer')
 
     #:str: path  to default model to use in classification
-    DEFAULT_MODEL = os.path.join(os.path.dirname(__file__), "data", "bpar.model")
+    DEFAULT_MODEL = os.path.join(os.path.dirname(__file__), "data",
+                                 "bpar.model")
 
     #:pipeline object: default pipeline object used for classification
     DEFAULT_PIPELINE = Pipeline([('vectorizer', DictVectorizer()),
-                         ('var_filter', VarianceThreshold()),
-                         ('LinearSVC', DEFAULT_CLASSIFIER)])
+                                 ('var_filter', VarianceThreshold()),
+                                 ('LinearSVC', DEFAULT_CLASSIFIER)])
 
-    def __init__(self, a_featgen = featgen, a_classify = classify, \
-                     a_model = DEFAULT_MODEL):
+    def __init__(self, a_featgen=featgen, a_classify=classify,
+                 a_model=DEFAULT_MODEL):
         """Class constructor.
 
         Args:

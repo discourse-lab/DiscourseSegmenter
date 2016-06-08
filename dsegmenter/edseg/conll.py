@@ -10,21 +10,23 @@ fields.  This module provides several classes which parse such lines either
 incrementally, one by one, or all at once, and store their information in their
 internal data structure.
 
-Constants:
-EOS         - end of sentence marker
-EOL         - end of line marker
-EOS_TAG     - end tag for sentences
-FIELDSEP    - separator of fields for description of a single word
-EMPTY_FIELD - word denoting an empty fields in the word
-FEAT_SEP    - separator of individual features
-FEAT_VALUE_SEP - separator of feature name and its value
-FEAT_VALUE_SEP_RE - regular expression corresponding to FEAT_VALUE_SEP
+Attributes:
+  EOS (str): end of sentence marker
+  EOL (str): end of line marker
+  EOS_TAG (str): end tag for sentences
+  FIELDSEP (str): separator of fields for description of a single word
+  EMPTY_FIELD (str): word denoting an empty fields in the word
+  FEAT_SEP (str): separator of individual features
+  FEAT_VALUE_SEP (str): separator of feature name and its value
+  FEAT_VALUE_SEP_RE (re): regular expression corresponding to FEAT_VALUE_SEP
 
 Classes:
-CONLL()         - class for handling CONLL forrests
-CONLLSentence() - class storing information pertaining to a single CONLL
-sentence
-CONLLWord()     - class storing information about a single CONLL word
+  CONLL: class for handling CONLL forrests
+  CONLLSentence: class storing information pertaining to a single CONLL
+    sentence
+  CONLLWord: class storing information about a single CONLL word
+
+.. moduleauthor:: Wladimir Sidorenko (Uladzimir Sidarenka)
 
 """
 

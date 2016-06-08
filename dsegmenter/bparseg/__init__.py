@@ -12,7 +12,7 @@ Attributes:
                               trees
   bparsegmenter (module): class for segmenting syntax trees into discourse
                           units
-  __all__ (List[str]): list of sub-modules exported by this package
+  __all__ (list[str]): list of sub-modules exported by this package
   __author__ (str): package's author
   __email__ (str): email of package's author
   __name__ (str): package's name
@@ -22,9 +22,12 @@ Attributes:
 
 ##################################################################
 # Imports
-from .constants import ENCODING, NO_PARSE_RE, WORD_SEP
-from .bparsegmenter import BparSegmenter, read_trees, read_segments, trees2segs
-from .constituency_tree import CTree
+from __future__ import absolute_import
+
+from dsegmenter.bparseg.constants import ENCODING, NO_PARSE_RE, WORD_SEP
+from dsegmenter.bparseg.bparsegmenter import BparSegmenter, \
+    read_trees, read_segments, trees2segs
+from dsegmenter.bparseg.constituency_tree import CTree
 
 ##################################################################
 # Intialization

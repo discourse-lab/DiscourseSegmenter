@@ -5,10 +5,10 @@ dsegmenter
 ----------
 
 .. automodule:: dsegmenter
-	:members:
-	:undoc-members:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    dsegmenter.bparseg.rst
+   dsegmenter.edseg.rst
+   dsegmenter.mateseg.rst

@@ -36,7 +36,7 @@ with codecs.open(path.join(PWD, "test-requirements.txt"),
 # setup()
 setup(
     name="dsegmenter",
-    version="0.0.1.dev1",
+    version="0.1.0-rc.1",
     description=("Collection of discourse segmenters "
                  "(with pre-trained models for German)"),
     long_description=long_description,

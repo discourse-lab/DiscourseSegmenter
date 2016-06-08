@@ -6,11 +6,14 @@
 """
 Module providing class for handling constituency syntax trees.
 
-Classes:
-Tree - meta-subclass of NLTK tree which allows hashing
-CTree - interface for handling constituency trees
+Attributes:
+  OP (str): special token used to substitute opening parentheses
+  OP_RE (re): regexp for matching opening parentheses
+  CP (str): special token used to substitute closing parentheses
+  CP_RE (re): regexp for matching closing parentheses
 
-@author: Wladimir Sidorenko
+.. moduleauthor:: Wladimir Sidorenko
+
 """
 
 ##################################################################
@@ -30,22 +33,24 @@ OP_RE = re.compile(r"\\\(")
 CP = "-CP-"
 CP_RE = re.compile(r"\\\)")
 
+
 ##################################################################
 # Classes
 class Tree(nltk.tree.ParentedTree):
-    """
-    Direct subclass of nltk.tree.ParentedTree providing hashing.
+    """Direct subclass of nltk.tree.ParentedTree providing hashing.
 
-    This class extends its parent by two additional methods:
-    __hash__() - which uses the standard id() method and makes
-    NLTK trees prnt_label() - return label of the parent tree
+    This class extends its parent by an additional method :meth:`__hash__`,
+    which uses the standard :meth:`id` method and allows the objects to be
+    stored in hashes, and also overwrites the method :meth:`prnt_label`,
+    returning the label of the parent tree
+
     """
 
     def __init__(self, *args):
-        """
-        Class constructor (simply delegates to super-class).
+        """Class constructor (simply delegates to super-class).
 
-        @param args - list of arguments which should be passed to the parent
+        Args:
+          args (list): arguments which should be passed to the parent
 
         """
         if len(args) == 0:
@@ -54,8 +59,8 @@ class Tree(nltk.tree.ParentedTree):
             super(Tree, self).__init__(*args)
 
     def __hash__(self):
-        """
-        Return id of this object.
+        """Return id of this object.
+
         """
         return id(self)
 
@@ -70,6 +75,7 @@ class Tree(nltk.tree.ParentedTree):
             return self._parent.label()
         return ""
 
+
 ##################################################################
 class CTree(Tree):
     """Class for reading and modifying constituency trees.
@@ -82,7 +88,7 @@ class CTree(Tree):
     """
 
     @classmethod
-    def parse_lines(cls, a_lines, a_one_per_line = False):
+    def parse_lines(cls, a_lines, a_one_per_line=False):
         """Parse input lines and return list of BitPar trees.
 
         Args:
@@ -121,12 +127,14 @@ class CTree(Tree):
 
     @classmethod
     def _get_segments(cls, a_line):
-        """
-        Split line into separate segments.
+        """Split line into separate segments.
 
-        @param a_line - line to be split
+        Args:
+          a_line (str): line to be split
 
-        @return list of segments
+        Returns:
+          list: segments
+
         """
         seg = ""
         ob = 0
@@ -136,7 +144,8 @@ class CTree(Tree):
             if c == "(" and i < max_len and not WORD_SEP.match(a_line[i + 1]):
                 ob += 1
             elif c == ")":
-                assert ob > 0, "Unmatched closing bracket in line" + repr(a_line)
+                assert ob > 0, \
+                    "Unmatched closing bracket in line" + repr(a_line)
                 ob -= 1
             seg += c
             if ob == 0 and not WORD_SEP.match(seg):
@@ -146,8 +155,7 @@ class CTree(Tree):
         return segments
 
     def __init__(self):
-        """
-        Class constructor.
+        """Class constructor.
 
         """
         pass
