@@ -29,13 +29,15 @@ Classes:
 from .align import nw_align
 from .constants import ENCODING
 from .constituency_tree import Tree, CTree
-from ..treeseg import TreeSegmenter, DiscourseSegment, CONSTITUENCY, DEFAULT_SEGMENT
+from ..treeseg import TreeSegmenter, DiscourseSegment, \
+    CONSTITUENCY, DEFAULT_SEGMENT
 
 # from sklearn.cross_validation import KFold
 from sklearn.externals import joblib
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import VarianceThreshold, SelectKBest
-from sklearn.metrics import precision_recall_fscore_support, classification_report, confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support, \
+    classification_report, confusion_matrix
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, LinearSVC
 
@@ -152,6 +154,7 @@ def read_trees(a_lines, a_one_per_line = False):
             toks2trees[toks] = [tree]
     return toks2trees, ctrees
 
+
 def read_segments(a_lines):
     """Read file and return a list of segment dictionaries.
 
@@ -192,7 +195,8 @@ def read_segments(a_lines):
                 s_c += 1
                 continue
             elif tok == ')':
-                assert active_segments, "Unbalanced closing parenthesis at line: " + repr(iline)
+                assert active_segments, \
+                    "Unbalanced closing parenthesis at line: " + repr(iline)
                 active_tokens = set(atoks)
                 del atoks[:]
                 for a_s in active_segments:
@@ -202,20 +206,23 @@ def read_segments(a_lines):
             else:
                 atoks.append((t_c, tok))
                 t_c += 1
-        assert not active_segments, "Unbalanced opening parenthesis at line: " + repr(iline)
+        assert not active_segments, \
+            "Unbalanced opening parenthesis at line: " + repr(iline)
     toks2segs = dict()
     segments = segs2toks.keys()
-    segments.sort(key = lambda el: el[0])
+    segments.sort(key=lambda el: el[0])
     for seg in segments:
         toks = frozenset(segs2toks[seg])
         # it can be same tokenset corresponds to multiple segments, in that
         # case we leave the first one that we encounter
         if toks in toks2segs:
             continue
-        assert toks not in toks2segs, "Multiple segments correspond to the same tokenset: '" + \
+        assert toks not in toks2segs, \
+            "Multiple segments correspond to the same tokenset: '" + \
             repr(toks) + "': " + repr(seg) + ", " + repr(toks2segs[toks])
         toks2segs[toks] = seg
     return toks2segs
+
 
 def trees2segs(a_toks2trees, a_toks2segs):
     """Align trees with corresponding segments.

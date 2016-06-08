@@ -52,6 +52,7 @@ FEAT_SEP = '|'
 FEAT_VALUE_SEP = '='
 FEAT_VALUE_SEP_RE = re.compile(FEAT_VALUE_SEP)
 
+
 ##################################################################
 # Classes
 class CONLL(object):
