@@ -145,13 +145,15 @@ def _make_matrix_(s1, s2, insert, delete, substitute):
       delete - function giving penalty for deleting a char
       substitute - function giving penalty for substituting a char1 with char2
 
-    @return optimal matching matrix of two strings
+    Returns:
+      np.array: optimal matching matrix of two strings
 
     """
     # get lengths of both lists
-    L1 = len(s1) + 1; L2 = len(s2) + 1
+    L1 = len(s1) + 1
+    L2 = len(s2) + 1
     # create a matrix for storing scores and backtracking information.
-    mtx = [[[None, None]] * L2  for c in xrange(L1)]
+    mtx = [[[None, None]] * L2 for c in xrange(L1)]
     # auxiliary variables for characters
     c1 = c2 = ''
     # auxiliary variables for iterators
@@ -187,7 +189,7 @@ def _make_matrix_(s1, s2, insert, delete, substitute):
             c2 = s2[prev_j]
             # compute different modification scores
             delscore = mtx[prev_i][j][0] + delete(c1)
-            inscore  = mtx[i][prev_j][0] + insert(c2)
+            inscore = mtx[i][prev_j][0] + insert(c2)
             subscore = mtx[prev_i][prev_j][0] + substitute(c1, c2)
             # compute the maximum over three scores
             maxscore = max(delscore, inscore, subscore)
@@ -202,15 +204,18 @@ def _make_matrix_(s1, s2, insert, delete, substitute):
             mtx[i][j] = (maxscore, bck_idx)
     return mtx
 
-def _decode_matrix_(mtx, a_offset = 0, a_keep = False):
+
+def _decode_matrix_(mtx, a_offset=0, a_keep=False):
     """Compute best alignment for s1 and s2 based on error matrix.
 
-      mtx    - optimal matching matrix
-      a_offset - offset for indices
-      a_keep - include indices of words the were deleted during edit
+    Args:
+      mtx (np.array): optimal matching matrix
+      a_offset (int): offset for indices
+      a_keep (bool): include indices of words the were deleted during edit
 
-    @return list of indices of second iterable which provide best alignment to
-    first iterable
+    Returns:
+      list: indices of second iterable which provide best alignment to
+        the first iterable
 
     """
     # matrix indices `i` and `j` will differ by one from the actual string
@@ -257,7 +262,8 @@ def _partition_(seq1, seq2):
       seq2 (iterable): with real values
 
     Returns:
-      pos (int): list index such that seq1[pos] + seq2[pos] is maximum
+      int: list index such that seq1[pos] + seq2[pos] is maximum
+
     """
     _sum_ = _max_ = _pos_ = float("-inf")
     for pos, ij in enumerate(zip(seq1, seq2)):

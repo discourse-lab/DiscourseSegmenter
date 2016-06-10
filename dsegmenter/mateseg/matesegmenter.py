@@ -197,10 +197,12 @@ def get_training_observations(seg_trees, dep_trees):
 def _cnt_stat(a_gold_segs, a_pred_segs):
     """Estimate the number of true pos, false pos, and false neg.
 
-    @param a_gold_segs - gold segments
-    @param a_pred_segs - predicted segments
+    Args:
+      a_gold_segs (iterable): gold segments
+      a_pred_segs (iterable): predicted segments
 
-    @return 3-tuple with true positives, false positives, and false negatives
+    Returns:
+     tuple: true positives, false positives, and false negatives
 
     """
     tp = fp = fn = 0

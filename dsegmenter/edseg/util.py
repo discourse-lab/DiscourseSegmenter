@@ -21,8 +21,8 @@ NotFinal - exception raised by Trie if match does not reach final state
 AlreadyFinalized - exception raised by StartOfClauseMatcher on an attempt
            to add a rule after matcher has already been finalized
 
-@author = Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <vancoppenolle at uni dash potsdam dot de>, <sidarenk at uni dash potsdam dot de>
+.. moduelauthor:: Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
+
 """
 
 ##################################################################
@@ -31,6 +31,7 @@ from collections import defaultdict
 from functools import partial
 
 import codecs
+
 
 ##################################################################
 # Methods

@@ -31,13 +31,10 @@ NO_MATCH_STRING = "NONE"
 class TreeSegmenter(object):
     """Class for converting parse trees to discourse segments.
 
-    Instance Variables:
-    decfunc - decision function
-    segment - public function for doing segmentation
-    type - type of trees to be processed
-
-    Methods:
-    segment - extract discourse segments from parse trees
+    Attributes:
+      decfunc: decision function
+      segment: public function for doing segmentation
+      type: type of trees to be processed
 
     """
 
@@ -66,21 +63,23 @@ class TreeSegmenter(object):
                     a_word_access=lambda x: x, a_strategy=GREEDY):
         """Extract discourse segments from dependency parse trees.
 
-        @param a_tree - parse tree which should be processed (with interface
-                        compatible with nltk.parse.dependencygraph)
-        @param a_predict - prediction function
-        @param a_root_idx - index of the root node in the list of tree nodes
-        @param a_children - index of the child nodes
-        @param a_word_access - a function for accessing the token string for
+        Args:
+          a_tree (nltk.parse.dependencygraph): parse tree which should be
+            processed
+          a_predict (lambda): prediction function
+          a_root_idx (int): index of the root node in the list of tree nodes
+          a_children (list[int]): index of the child nodes
+          a_word_access (lambda): a function for accessing the token string for
                          more complex, structured tokens
-        @param a_strategy - flag for handling missing and non-projective edges
-        (GREEDY means that only adjacent descendants of the root node will
-        be put into a segment, if the root initiates one; GENEROUS means that
-        all words between the root and its right- and left-most dependencies
-        will be put into one segment disregarding the actual structure of the
-        dependency tree)
+          a_strategy (int): flag for handling missing and non-projective edges
+            (GREEDY means that only adjacent descendants of the root node will
+            be put into a segment, if the root initiates one; GENEROUS means
+            that all words between the root and its right- and left-most
+            dependencies will be put into one segment disregarding the actual
+            structure of the dependency tree)
 
-        @return list of discourse segments
+        Returns:
+          list: discourse segments
 
         """
         a_ret = []
@@ -129,13 +128,15 @@ class TreeSegmenter(object):
         return a_ret
 
     def _dg_decfunc(self, a_node, a_tree):
-        """
-        Make a prediction whether given node initiates a segment.
+        """Make a prediction whether given node initiates a segment.
 
-        @param a_node - parse node to be analyzed
-        @param a_tree - tree of analyzed node
+        Args:
+          a_node (dict): parse node to be analyzed
+          a_tree (nltk.parse.dependencygraph): tree of analyzed node
 
-        @return name of discourse segment or None
+        Returns:
+          str or None: name of discourse segment or None
+
         """
         chnode = None
         chtag = ""
@@ -156,12 +157,15 @@ class TreeSegmenter(object):
     def _cnst_segment(self, a_tree, a_ret, a_predict=None, a_start=0):
         """Extract discourse segments from constitutency parse trees.
 
-        @param a_tree - parse tree which should be processed
-        @param a_ret - target list which should be populated with segments
-        @param a_predict - prediction function
-        @param a_start - starting index of tokens
+        Args:
+          a_tree (nltk.parse.dependencygraph): parse tree which should
+            be processed
+          a_ret (list): target list which should be populated with segments
+          a_predict (lambda): prediction function
+          a_start (int): starting index of tokens
 
-        @return list of discourse segments
+        Returns:
+          list: discourse segments
 
         """
         if a_predict is None:   # find appropriate decision function
@@ -187,12 +191,14 @@ class TreeSegmenter(object):
         return a_start
 
     def _cnst_decfunc(self, a_tree):
-        """
-        Make a prediction whether given parse tree initiates a segment.
+        """Make a prediction whether given parse tree initiates a segment.
 
-        @param a_tree - tree of analyzed node
+        Args:
+         a_tree (nltk.parse.dependencygraph):- tree of analyzed node
 
-        @return name of discourse segment or None
+        Returns:
+          str or None: name of discourse segment or None
+
         """
         if a_tree.label() == "TOP":
             return "HS"
@@ -202,11 +208,14 @@ class TreeSegmenter(object):
     def _extract_nonadjacent(self, a_seg, a_root_pos):
         """Remove from segment nodes which are not adjacent to root.
 
-        @param a_seg - list of terminals to be modified
-        @param a_root_idx - index of the root node
+        Args:
+          a_seg (list): terminals to be modified
+          a_root_idx (int): index of the root node
 
-        @return list of non-adjacent words (discourse segment will also be
-        modified)
+        Return:
+          list: non-adjacent words (discourse segment will also be
+            modified)
+
         """
         temp = []
         adjacent = []
@@ -237,11 +246,13 @@ class TreeSegmenter(object):
 
     def _unite_nonadjacent(self, a_word_seg):
         """Add nodes between the discourse segment and its non-projective edges
-        to the segment.
 
-        @param a_word_seg - list of terminals and segments to be modified
+        Args:
+          a_word_seg (list): terminals and segments to be modified
 
-        @return modified word/segment list
+        Returns:
+          list: modified word/segment list
+
         """
         word_seg = []
         right_leaves = []

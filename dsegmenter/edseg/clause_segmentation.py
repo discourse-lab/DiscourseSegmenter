@@ -1,30 +1,23 @@
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8; -*-
 
-"""
-Module providing rule-based clause segmenter
+"""Module providing rule-based clause segmenter
 
-Constants:
-
-Methods:
-catgetter - method for obtaining category of CONLL node
-
-Classes:
-ClauseSegmenter - class for doing clause segmentation
-
-@author = Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <vancoppenolle at uni dash potsdam dot de>, <sidarenk at uni dash potsdam dot de>
+.. moduelauthor:: Jean VanCoppenolle
 
 """
 
 ##################################################################
 # Libraries
-from .chunking import Chunker
-from .finitestateparsing import FiniteStateParser, Tree
-from .util import match as match_
-from .data import DELIMS, DELIM_NAMES, finite_verbs
+from __future__ import absolute_import
+
+from dsegmenter.edseg.chunking import Chunker
+from dsegmenter.edseg.finitestateparsing import FiniteStateParser, Tree
+from dsegmenter.edseg.util import match as match_
+from dsegmenter.edseg.data import DELIMS, DELIM_NAMES, finite_verbs
 
 import sys
+
 
 ##################################################################
 # Methods
@@ -43,25 +36,23 @@ def catgetter(node):
         return DELIM_NAMES[form]
     return node['pos']
 
+
 ##################################################################
 # Class
 class ClauseSegmenter(object):
-    """
-    Class for perfoming discourse segmentation on CONLL dependency trees.
+    """Class for perfoming discourse segmentation on CONLL dependency trees.
 
-    Instance variables:
-    _chunker - internal rule-based clause chunker
-    _parser - internal finite-state parser
+    Attributes:
+      _chunker: internal rule-based clause chunker
+      _parser: internal finite-state parser
 
-    Public methods:
-    segment - perform discourse segmentation of the CONLL sentence
     """
 
     def __init__(self, **kwargs):
-        """
-        Class constructor.
+        """Class constructor.
 
         @param a_chunker - clause chunker to use
+
         """
         chunker = kwargs.get('chunker')
         if chunker is None:
@@ -72,12 +63,12 @@ class ClauseSegmenter(object):
         self._setup_parser()
 
     def segment(self, sent):
-        """
-        Method for segmenting CONLL trees.
+        """Method for segmenting CONLL trees.
 
         @param sent - CONLL tree to process
 
         @return sentence-level discourse segment
+
         """
         self._prepare_tokens(sent)
         chunk_tree = self._chunker.chunk(sent)
@@ -108,108 +99,108 @@ class ClauseSegmenter(object):
         ##########
 
         define('VFIN',
-            '''
-            <VAFIN>
-            <VMFIN>
-            <VVFIN>
-            ''')
+               '''
+               <VAFIN>
+               <VMFIN>
+               <VVFIN>
+               ''')
 
         define('VINF',
-            '''
-            <VAINF>
-            <VAPP>
-            <VMINF>
-            <VMPP>
-            <VVINF>
-            <VVIZU>
-            <VVPP>
-            ''')
+               '''
+               <VAINF>
+               <VAPP>
+               <VMINF>
+               <VMPP>
+               <VVINF>
+               <VVIZU>
+               <VVPP>
+               ''')
 
         define('V',
-            '''
-            <VAFIN>
-            <VMFIN>
-            <VVFIN>
-            <VAINF>
-            <VAPP>
-            <VMINF>
-            <VMPP>
-            <VVINF>
-            <VVIZU>
-            <VVPP>
-            ''')
+               '''
+               <VAFIN>
+               <VMFIN>
+               <VVFIN>
+               <VAINF>
+               <VAPP>
+               <VMINF>
+               <VMPP>
+               <VVINF>
+               <VVIZU>
+               <VVPP>
+               ''')
 
         define('PUNCT',
-            '''
-            <$,>
-            <$(>
-            <$.>
-            ''')
+               '''
+               <$,>
+               <$(>
+               <$.>
+               ''')
 
         define('EOS',
-            '''
-            <$.>
-            <$,>
-            ''')
+               '''
+               <$.>
+               <$,>
+               ''')
 
         define('DASH',
-           '''
-           <EM_DASH>
-           <EN_DASH>
-           <FIGURE_DASH>
-           <HORIZONTAL_BAR>
-           ''')
+               '''
+               <EM_DASH>
+               <EN_DASH>
+               <FIGURE_DASH>
+               <HORIZONTAL_BAR>
+               ''')
 
         define('VG',
-            '''
-            <FVG>
-            <IVG>
-            ''')
+               '''
+               <FVG>
+               <IVG>
+               ''')
 
         define('CLAUSE',
-            '''
-            <RelCl>
-            <InfCl>
-            <IntCl>
-            <SntSubCl>
-            <InfSubCl>
-            <MainCl>
-            ''')
+               '''
+               <RelCl>
+               <InfCl>
+               <IntCl>
+               <SntSubCl>
+               <InfSubCl>
+               <MainCl>
+               ''')
 
         define('BASIC_CONTENT',
-            '''
-            (?:
-                [^%PUNCT%<KON>%VG%]
-                (?:
-                    <KON>?
-                    [^%PUNCT%<KON>%VG%]
-                )?
-            )*
-            ''')
+               '''
+               (?:
+               [^%PUNCT%<KON>%VG%]
+               (?:
+               <KON>?
+               [^%PUNCT%<KON>%VG%]
+               )?
+               )*
+               ''')
 
         define('CONTENT',
-            '''
-            (?:
-                [^%PUNCT%<KON>%VG%]
-                (?:
-                    [<$,><KON>]
-                    [^%PUNCT%<KON>%VG%]
-                |
-                    [%CLAUSE%]
-                    <$,>
-                )?
-            )*
-            ''')
+               '''
+               (?:
+               [^%PUNCT%<KON>%VG%]
+               (?:
+               [<$,><KON>]
+               [^%PUNCT%<KON>%VG%]
+               |
+               [%CLAUSE%]
+               <$,>
+               )?
+               )*
+               ''')
 
         define('BASIC_TRAILER',
-            '''
-            (?:
-                [<APPR><APPRART><KOKOM>]
-                [^%PUNCT%<KON>%VG%]+
-            |
-                <PC>
-            )
-            ''')
+               '''
+               (?:
+               [<APPR><APPRART><KOKOM>]
+               [^%PUNCT%<KON>%VG%]+
+               |
+               <PC>
+               )
+               ''')
 
         ##########################
         # Parenthesized segments #
@@ -242,104 +233,110 @@ class ClauseSegmenter(object):
             return aux
 
         add_rule('FVG',
-            '''
-            (
-                <PTKZU>?
-                [%VINF%]+
-                [%VFIN%]
-            |
-                <VVINF>        # gehen !!! added by W. Sidorenko (remove if it causes errors)
-                <VVINF>        # lassen or simply `gehen' in case of tagging mistakes
-            )
-            (?:
-                [^<NC><PC>]
-            |
-                $
-            )
-            ''',
-            group=1,
-            feats=lambda match: {'verb': get_verb(match, group=1)},
-            level=5)
+                 '''
+                 (
+                 <PTKZU>?
+                 [%VINF%]+
+                 [%VFIN%]
+                 |
+                 # gehen !!! added by W. Sidorenko (remove if it causes errors)
+                 # lassen or simply `gehen' in case of tagging mistakes
+                 <VVINF>
+                 <VVINF>
+                 )
+                 (?:
+                 [^<NC><PC>]
+                 |
+                 $
+                 )
+                 ''',
+                 group=1,
+                 feats=lambda match: {'verb': get_verb(match, group=1)},
+                 level=5)
 
         add_rule('FVG',
-            '''
-            (?:
-               <VVPP>         # ausgenommen
-               <VAINF>        # werden
-               [%VFIN%]       # soll
-               |
-               [%VFIN%]       # soll
-               <VVPP>         # ausgenommen
-               <VAINF>        # werden
-               |
-               [%VFIN%]
-               [%VINF%]*
-            )
-            ''',
-            feats=lambda match: {'verb': get_verb(match)},
-            level=5)
+                 '''
+                 (?:
+                 <VVPP>         # ausgenommen
+                 <VAINF>        # werden
+                 [%VFIN%]       # soll
+                 |
+                 [%VFIN%]       # soll
+                 <VVPP>         # ausgenommen
+                 <VAINF>        # werden
+                 |
+                 [%VFIN%]
+                 [%VINF%]*
+                 )
+                 ''',
+                 feats=lambda match: {'verb': get_verb(match)},
+                 level=5)
 
         add_rule('IVG',
-            '''
-            [%VINF%]*
-            <PTKZU>?
-            [%VINF%]+
-            ''',
-            feats=lambda match: {'verb': get_verb(match)},
-            level=5)
+                 '''
+                 [%VINF%]*
+                 <PTKZU>?
+                 [%VINF%]+
+                 ''',
+                 feats=lambda match: {'verb': get_verb(match)},
+                 level=5)
 
         ################################
         # Basic clauses (no embedding) #
         ################################
 
         add_rule('RelCl',
-            '''
-            <APPR>?                 # optional preposition
-            [<PRELS><PRELAT>]       # relative pronoun
-            %BASIC_CONTENT%         # clause content
-            (
-                [%VG%]              # verb group (error tolerance: should actually be finite)
-            )
-            %BASIC_TRAILER%?        # optional trailer
-            [%EOS%]?                  # optional end of sentence punctuation
-            ''',
-            feats=lambda match: {'verb': match[1][0].get('verb')},
-            level=6)
+                 '''
+                 <APPR>?                 # optional preposition
+                 [<PRELS><PRELAT>]       # relative pronoun
+                 %BASIC_CONTENT%         # clause content
+                 (
+                 # verb group (error tolerance: should actually be finite)
+                 [%VG%]
+                 )
+                 %BASIC_TRAILER%?        # optional trailer
+                 # optional end of sentence punctuation
+                 [%EOS%]?
+                 ''',
+                 feats=lambda match: {'verb': match[1][0].get('verb')},
+                 level=6)
 
         add_rule('RelCl',
-            '''
-            <KON>                   # conjunction
-            (
-                <APPR>?             # optional preposition
-                [<PRELS><PRELAT>]   # relative pronoun
-                %BASIC_CONTENT%     # clause content
-                (
-                    [%VG%]          # verb group (error tolerance: should actually be finite)
-                )
-                %BASIC_TRAILER%?    # optional trailer
-                [%EOS%]?              # optional end of sentence punctuation
-            )
-            ''',
-            group=1,
-            feats=lambda match: {'verb': match[2][0].get('verb')},
-            level=7)
+                 '''
+                 <KON>                   # conjunction
+                 (
+                 <APPR>?             # optional preposition
+                 [<PRELS><PRELAT>]   # relative pronoun
+                 %BASIC_CONTENT%     # clause content
+                 (
+                 # verb group (error tolerance: should actually be finite)
+                 [%VG%]
+                 )
+                 %BASIC_TRAILER%?    # optional trailer
+                 [%EOS%]?              # optional end of sentence punctuation
+                 )
+                 ''',
+                 group=1,
+                 feats=lambda match: {'verb': match[2][0].get('verb')},
+                 level=7)
 
         add_rule('RelCl',
-            '''
-            <RelCl>                 # relative clause
-            <KON>                   # conjunction
-            (
-                %BASIC_CONTENT%     # clause content
-                (
-                    [%VG%]          # verb group (error tolerance: should actually be finite)
-                )
-                %BASIC_TRAILER%?    # optional trailer
-                [%EOS%]?              # optional end of sentence punctuation
-            )
-            ''',
-            group=1,
-            feats=lambda match: {'verb': match[2][0].get('verb')},
-            level=7)
+                 '''
+                 <RelCl>                 # relative clause
+                 <KON>                   # conjunction
+                 (
+                 %BASIC_CONTENT%     # clause content
+                 (
+                 # verb group (error tolerance: should actually be finite)
+                 [%VG%]
+                 )
+                 %BASIC_TRAILER%?    # optional trailer
+                 [%EOS%]?              # optional end of sentence punctuation
+                 )
+                 ''',
+                 group=1,
+                 feats=lambda match: {'verb': match[2][0].get('verb')},
+                 level=7)
 
         def complex_that(match):
             tokens = list(match[1][0].iter_terminals())
@@ -1160,139 +1157,144 @@ class ClauseSegmenter(object):
             level=17)
 
         add_rule('MainCl',
-            '''
-            (
-                (?:
-                    ^
-                    <KON>
-                )?
-                (?:
-                    [^<KON><MainCl><IVG>]
-                    (?:
-                        <KON>
-                        [^<KON><MainCl><IVG>]
-                    )?
-                )*
-                (
-                    <IVG>
-                )
-                [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
-                (?:
-                    [%CLAUSE%]
-                    <$,>
-                    [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
-                )*
-                (
-                    <PTKVZ>
-                )?
-                [%PUNCT%]
-            )
-            <AC>
-            ''', group=1, level=17)
+                 '''
+                 (
+                 (?:
+                 ^
+                 <KON>
+                 )?
+                 (?:
+                 [^<KON><MainCl><IVG>]
+                 (?:
+                 <KON>
+                 [^<KON><MainCl><IVG>]
+                 )?
+                 )*
+                 (
+                 <IVG>
+                 )
+                 [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
+                 (?:
+                 [%CLAUSE%]
+                 <$,>
+                 [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
+                 )*
+                 (
+                 <PTKVZ>
+                 )?
+                 [%PUNCT%]
+                 )
+                 <AC>
+                 ''', group=1, level=17)
 
         add_rule('MainCl',
-            '''
-            ^
-            (?:
-            <NE>+
-            (?: <$,> | <$(> )
-            )?
-            (
-                <SntSubCl>
-            )
-            [%CLAUSE%]+
-            <$.>?
-            ''',
-            feats=lambda match: match[1][0].feats,
-            level=17)
+                 '''
+                 ^
+                 (?:
+                 <NE>+
+                 (?: <$,> | <$(> )
+                 )?
+                 (
+                 <SntSubCl>
+                 )
+                 [%CLAUSE%]+
+                 <$.>?
+                 ''',
+                 feats=lambda match: match[1][0].feats,
+                 level=17)
 
         add_rule('MainCl',
-            '''
-            (?:
-                ^
-                <KON>
-            )?
-            (?:
-                [^<KON><MainCl><FVG>%DASH%%PUNCT%]
-                (?:
-                    <KON>
-                    [^<KON><MainCl><FVG>]
-                )?
-                |
-                [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%]
-            )*
-            (
-                <FVG>
-            )
-            [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
-            (?:
-                [%CLAUSE%]
-                [%PUNCT%]?
-            )*
-            [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
-            (
-                <PTKVZ>
-            )?
-            (
-                <IVG>                                       # either a non-finite verb group
-            |                                               # or (error tolerance)
-                <FVG>                                       # a finite verb group if
-                [%PUNCT%]                                   # immediately followed by punctuation
-            )?
-            (?:
-                [%DASH%%PUNCT%]
-                (?:
-                    [^%VG%%DASH%%PUNCT%]+
-                    (?:
-                        $
-                    |
-                        [%DASH%%PUNCT%]
-                    )
-                )?
-             |
-                # [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%]*        # commented because of errors
-                (?:
-                    [%CLAUSE%]
-                    <$,>?
-                )*
-            )?
-            (?: <$.> | <$,>)?
-            ''',
+                 '''
+                 (?:
+                 ^
+                 <KON>
+                 )?
+                 (?:
+                 [^<KON><MainCl><FVG>%DASH%%PUNCT%]
+                 (?:
+                 <KON>
+                 [^<KON><MainCl><FVG>]
+                 )?
+                 |
+                 [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%]
+                 )*
+                 (
+                 <FVG>
+                 )
+                 [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
+                 (?:
+                 [%CLAUSE%]
+                 [%PUNCT%]?
+                 )*
+                 [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%<PTKVZ>]*
+                 (
+                 <PTKVZ>
+                 )?
+                 (
+                 # either a non-finite verb group
+                 # or (error tolerance)
+                 <IVG>
+                 |
+                 # a finite verb group if
+                 <FVG>
+                 # immediately followed by punctuation
+                 [%PUNCT%]
+                 )?
+                 (?:
+                 [%DASH%%PUNCT%]
+                 (?:
+                 [^%VG%%DASH%%PUNCT%]+
+                 (?:
+                 $
+                 |
+                 [%DASH%%PUNCT%]
+                 )
+                 )?
+                 |
+                 # commented because of errors
+                 # [^%VG%<KON>%CLAUSE%%DASH%%PUNCT%]*
+                 (?:
+                 [%CLAUSE%]
+                 <$,>?
+                 )*
+                 )?
+                 (?: <$.> | <$,>)?
+                 ''',
                  feats=get_verb_feats,
                  level=18)
 
         add_rule('MainCl',
-            '''
-            (
-                <MainCl>
-            )
-            (?:
-                [<KON><$,>]
-                <MainCl>
-            )+
-            ''',
-            feats=lambda match: match[1][0].feats,
-            level=19)
+                 '''
+                 (
+                 <MainCl>
+                 )
+                 (?:
+                 [<KON><$,>]
+                 <MainCl>
+                 )+
+                 ''',
+                 feats=lambda match: match[1][0].feats,
+                 level=19)
 
         add_rule('MainCl',
-            '''
-            <MainCl>
-            (
-                (
-                [^%VG%%CLAUSE%%DASH%%PUNCT%]
-                |
-                [^%VG%%CLAUSE%%DASH%%PUNCT%]
-                <$,>
-                )+
-                [%EOS%]
-            )
-            ''', group=1,
+                 '''
+                 <MainCl>
+                 (
+                 (
+                 [^%VG%%CLAUSE%%DASH%%PUNCT%]
+                 |
+                 [^%VG%%CLAUSE%%DASH%%PUNCT%]
+                 <$,>
+                 )+
+                 [%EOS%]
+                 )
+                 ''', group=1,
                  feats=lambda match: {'makeVerbLess': True},
                  level=20)
 
         # Catch-all rule (fallback).
         add_rule('ANY',
-            '''
-            [^<MainCl><SntSubCl>]+
-            ''',
-            level=21)
+                 '''
+                 [^<MainCl><SntSubCl>]+
+                 ''',
+                 level=21)
