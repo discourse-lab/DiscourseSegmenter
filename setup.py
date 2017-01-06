@@ -6,7 +6,7 @@
 from setuptools import setup
 from os import path
 import codecs
-import glob
+
 
 ##################################################################
 # Variables and Constants
@@ -36,7 +36,7 @@ with codecs.open(path.join(PWD, "test-requirements.txt"),
 # setup()
 setup(
     name="dsegmenter",
-    version="0.1.0-rc.1",
+    version="0.2.0",
     description=("Collection of discourse segmenters "
                  "(with pre-trained models for German)"),
     long_description=long_description,
@@ -58,11 +58,10 @@ setup(
     install_requires=INSTALL_REQUIRES,
     setup_requires=["pytest-runner"],
     tests_require=TEST_REQUIRES,
-    provides=["dsegmenter (0.0.1)"],
+    provides=["dsegmenter (0.2.0)"],
     scripts=[path.join("scripts", "discourse_segmenter"),
-             path.join("scripts", "evaluation"),
-             path.join("scripts", "mate_segmenter")],
-    classifiers=["Development Status :: 2 - Pre-Alpha",
+             path.join("scripts", "evaluation")],
+    classifiers=["Development Status :: 4 - Beta",
                  "Environment :: Console",
                  "Intended Audience :: Science/Research",
                  "License :: OSI Approved :: MIT License",

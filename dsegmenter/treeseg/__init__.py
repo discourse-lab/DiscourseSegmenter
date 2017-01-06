@@ -16,15 +16,17 @@ treesegmenter - defines auxiliary class for converting syntax trees
 
 ##################################################################
 # Imports
-from .constants import DEFAULT_SEGMENT, ENCODING, GREEDY, GENEROUS, \
-    DEPENDENCY, CONSTITUENCY
-from .discourse_segment import DiscourseSegment
-from .treesegmenter import TreeSegmenter
+from __future__ import absolute_import, unicode_literals
+
+from dsegmenter.treeseg.constants import DEFAULT_SEGMENT, ENCODING, \
+    GREEDY, GENEROUS, DEPENDENCY, CONSTITUENCY
+from dsegmenter.treeseg.discourse_segment import DiscourseSegment
+from dsegmenter.treeseg.treesegmenter import TreeSegmenter
 
 ##################################################################
 # Intialization
 __name__ = "treeseg"
-__all__ = ["DEFAULT_SEGMENT", "ENCODING", "GREEDY", "GENEROUS", "DEPENDENCY", \
+__all__ = ["DEFAULT_SEGMENT", "ENCODING", "GREEDY", "GENEROUS", "DEPENDENCY",
            "CONSTITUENCY", "DiscourseSegment", "TreeSegmenter"]
 __author__ = "Uladzimir Sidarenka"
 __email__ = "sidarenk at uni dash potsdam dot de"

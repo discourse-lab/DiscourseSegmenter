@@ -10,13 +10,21 @@ discourse_segmenter [GLOBAL_OPTIONS] type [TYPE_SPECIFIC_OPTIONS] [FILEs]
 
 ##################################################################
 # Imports
-from __future__ import print_function, unicode_literals
-from dsegmenter.bparseg import BparSegmenter, CTree, \
-    read_trees, read_segments, trees2segs
+from __future__ import absolute_import, print_function, unicode_literals
+
+from dsegmenter.bparseg import BparSegmenter, CTree
+from dsegmenter.bparseg import read_tok_trees as bpar_read_tok_trees
+from dsegmenter.bparseg import read_trees as bpar_read_trees
+from dsegmenter.bparseg import trees2segs as bpar_trees2segs
+from dsegmenter.common import read_segments
 from dsegmenter.edseg import EDSSegmenter, CONLL
+from dsegmenter.mateseg import MateSegmenter
+from dsegmenter.mateseg import read_tok_trees as mate_read_tok_trees
+from dsegmenter.mateseg import read_trees as mate_read_trees
+from dsegmenter.mateseg import trees2segs as mate_trees2segs
 
 from collections import defaultdict
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 import argparse
 import codecs
 import glob
@@ -30,6 +38,7 @@ DEFAULT_ENCODING = "utf-8"
 ENCODING = DEFAULT_ENCODING
 EDSEG = "edseg"
 BPARSEG = "bparseg"
+MATESEG = "mateseg"
 CV = "cv"
 TEST = "test"
 TRAIN = "train"
@@ -51,18 +60,82 @@ def _set_train_test_args(a_parser):
       void:
 
     """
-    a_parser.add_argument("--bpar-sfx",
-                          help="suffix of the names of BitPar files",
+    a_parser.add_argument("--tree-sfx",
+                          help="suffix of the file names with input trees",
                           type=str, default="")
     a_parser.add_argument("--seg-sfx",
                           help="suffix of the names of segmentation files",
                           type=str, default="")
-    a_parser.add_argument("bpar_dir",
-                          help="directory containing BitPar files",
+    a_parser.add_argument("tree_dir",
+                          help="directory containing files with input trees",
                           type=str)
     a_parser.add_argument("seg_dir",
                           help="directory containing segmentation files",
                           type=str)
+
+
+def _set_bpar_mate_args(a_parser, a_name, a_in_name, a_dflt_path):
+    """Add CLI options common to BitPar and Mate segmenter.
+
+    Args:
+      a_parser (argparse.ArgumentParser): ArgumentParser instance to which new
+        arguments should be added
+      a_name (str): name of the segmenter for which new options should be added
+      a_in_name (str): name of the input data structure
+      a_dflt_path (str): path to default model
+
+    Returns:
+      void:
+
+    Note:
+      modifies ``a_parser`` in place
+
+    """
+    parser = a_parser.add_parser(a_name,
+                                 help="machine-learning discourse"
+                                 "segmenter for {:s}".format(a_in_name))
+    subparsers = parser.add_subparsers(help="action to perform",
+                                       dest="mode")
+    parser_train = subparsers.add_parser(TRAIN,
+                                         help="train new model"
+                                         " on {:s} and segment"
+                                         " files".format(a_in_name))
+    parser_train.add_argument("model",
+                              help="path to file in which to store the"
+                              " trained model", type=str)
+    _set_train_test_args(parser_train)
+
+    parser_cv = subparsers.add_parser(CV,
+                                      help="train and evaluate model"
+                                      " using cross-validation")
+    parser_cv.add_argument("-o", "--output-dir",
+                           help="output directory (leave empty for"
+                           " no output)", type=str, default="")
+    parser_cv.add_argument("model",
+                           help="path to the file in which the best"
+                           " trained model should be stored",
+                           type=str)
+    _set_train_test_args(parser_cv)
+
+    parser_test = subparsers.add_parser(TEST,
+                                        help="test model on {:s}"
+                                        " and segment files")
+    parser_test.add_argument("-m", "--model",
+                             help="path to file containing model",
+                             type=str,
+                             default=a_dflt_path)
+    _set_train_test_args(parser_test)
+
+    parser_segment = subparsers.add_parser(SEGMENT,
+                                           help="split {:s} into"
+                                           " discourse units".format(
+                                               a_in_name))
+    parser_segment.add_argument("-m", "--model",
+                                help="path to file containing model",
+                                type=str,
+                                default=a_dflt_path)
+    parser_segment.add_argument("files", help="input files",
+                                nargs='*', metavar="file")
 
 
 def _read_files(a_files, a_encoding=DEFAULT_ENCODING, a_skip_line=""):
@@ -95,13 +168,13 @@ def _read_files(a_files, a_encoding=DEFAULT_ENCODING, a_skip_line=""):
                         yield line.rstrip()
 
 
-def _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx):
+def _align_files(a_tree_dir, a_seg_dir, a_tree_sfx, a_seg_sfx):
     """Align BitPar and segment files in two directories.
 
     Args:
-      a_bpar_dir (str): directory containing files with BitPar trees
+      a_tree_dir (str): directory containing files with BitPar trees
       a_seg_dir (str): directory containing files with discourse segments
-      a_bpar_sfx (str): suffix of the names of BitPar files
+      a_tree_sfx (str): suffix of the names of BitPar files
       a_seg_sfx (str): suffix of the names of segmentation files
 
     Yields:
@@ -110,8 +183,8 @@ def _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx):
     """
     segf = ""
     basefname = ""
-    BP_SFX_RE = re.compile(re.escape(a_bpar_sfx))
-    bpar_files = glob.iglob(os.path.join(a_bpar_dir, '*' + a_bpar_sfx))
+    BP_SFX_RE = re.compile(re.escape(a_tree_sfx) + '$')
+    bpar_files = glob.iglob(os.path.join(a_tree_dir, '*' + a_tree_sfx))
     for bpf in bpar_files:
         basefname = BP_SFX_RE.sub("", os.path.basename(bpf))
         segf = os.path.join(a_seg_dir, basefname + a_seg_sfx)
@@ -123,15 +196,21 @@ def _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx):
                 " file '{:s}'.".format(bpf), file=sys.stderr)
 
 
-def _read_trees_segments(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx,
-                         a_fname2item=False, a_encoding=DEFAULT_ENCODING):
+def _read_trees_segments(a_tree_dir, a_seg_dir, a_tree_sfx, a_seg_sfx,
+                         a_read_tok_trees=bpar_read_tok_trees,
+                         a_trees2segs=bpar_trees2segs,
+                         a_fname2item=False,
+                         a_encoding=DEFAULT_ENCODING):
     """Read input files containing discourse segments and BitPar trees.
 
     Args:
-      a_bpar_dir (str): directory containing files with BitPar trees
+      a_tree_dir (str): directory containing files with BitPar trees
       a_seg_dir (str): directory containing files with discourse segments
-      a_bpar_sfx (str): suffix of the names of BitPar files
+      a_tree_sfx (str): suffix of the names of BitPar files
       a_seg_sfx (str): suffix of the names of segmentation files
+      a_read_tok_trees (lambda): custom function for reading syntax trees
+      a_trees2segs (lambda): custom function for aligning syntax trees with
+        segments
       a_fname2item (bool): generate mappings from filenames to trees
       a_encoding (str): text encoding used for input/output
 
@@ -149,19 +228,22 @@ def _read_trees_segments(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx,
     tree2seg = {}
     toks2trees = {}
     toks2segs = {}
-    bpar_seg_files = _align_files(a_bpar_dir, a_seg_dir, a_bpar_sfx, a_seg_sfx)
+    tree_seg_files = _align_files(a_tree_dir, a_seg_dir, a_tree_sfx, a_seg_sfx)
     # do tree/segment alignment
-    for bpf, segf in bpar_seg_files:
+    for tf, segf in tree_seg_files:
         if a_fname2item:
-            ts, segs = trees[bpf], segments[segf]
-        with codecs.open(bpf, 'r', encoding=a_encoding) as ibpf:
-            toks2trees, _ = read_trees(ibpf)
+            ts, segs = trees[tf], segments[segf]
+        with codecs.open(tf, 'r', encoding=a_encoding) as itf:
+            toks2trees, _ = a_read_tok_trees(itf)
         with codecs.open(segf, 'r', encoding=a_encoding) as isegf:
             toks2segs = read_segments(isegf)
-        tree2seg = trees2segs(toks2trees, toks2segs)
-        for t, s in tree2seg.iteritems():
-            ts.append(t)
-            segs.append(s)
+        if a_trees2segs is None:
+            pass
+        else:
+            tree2seg = a_trees2segs(toks2trees, toks2segs)
+            for t, s in tree2seg.iteritems():
+                ts.append(t)
+                segs.append(s)
     return (trees, segments)
 
 
@@ -219,29 +301,30 @@ def edseg_segment(a_ilines, a_output_trees, a_encoding=DEFAULT_ENCODING):
     _output_segment_forrest(forrest, segmenter, a_output_trees, a_encoding)
 
 
-def bparseg_segment(a_segmenter, a_ilines, a_encoding=DEFAULT_ENCODING,
-                    a_ostream=sys.stdout):
-    """Perform segmentation based on BitPar constituency trees.
+def bpar_mate_segment(a_segmenter, a_lines, a_encoding=DEFAULT_ENCODING,
+                      a_ostream=sys.stdout, a_read_trees=CTree.parse_lines):
+    """Perform segmentation based on Mate dependency trees.
 
     Args:
-      a_segmenter - pointer to BitPar segmenter
-      a_ilines (iterable): iterator over input lines
+      a_segmenter (MateSegmenter): pointer to Mate segmenter
+      a_fnames (iterable): iterator over input lines
       a_encoding (str): text encoding used for input/output
       a_ostream (IOstream): output stream
+      a_read_trees (func): custom function for reading trees
 
     Returns:
       void:
 
     """
-    segments = []
-    for ctree in CTree.parse_lines(a_ilines):
-        segments = a_segmenter.segment([ctree])
-        print(u'\n'.join([unicode(s[-1])
-                          for s in segments]).encode(a_encoding),
+    segments = None
+    for itree in a_read_trees(a_lines):
+        segments = a_segmenter.segment([itree])
+        print('\n'.join([unicode(s[-1])
+                         for s in segments]).encode(a_encoding),
               file=a_ostream)
 
 
-def bparseg_test(a_segmenter, a_trees, a_segments):
+def bpar_mate_test(a_segmenter, a_trees, a_segments):
     """Evaluate performance of segment classification.
 
     Args:
@@ -287,8 +370,9 @@ def _cnt_stat(a_gold_segs, a_pred_segs):
 
 
 def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs,
+             a_tree_sfx, a_seg_sfx,
              a_output=False, a_out_dir=".", a_out_sfx=".tree",
-             a_folds=N_FOLDS, a_encoding=ENCODING):
+             a_folds=N_FOLDS, a_encoding=ENCODING, a_read_trees=None):
     """Train and evaluate model using n-fold cross-validation.
 
     Args:
@@ -296,12 +380,15 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs,
       a_path (str): path in which to store the model
       a_fname2trees (dict): mapping from file names to trees
       a_fname2segs (dict): mapping from file names to segments
+      a_tree_sfx (str): suffix of the names of parse files
+      a_seg_sfx (str): suffix of the names of segmentation files
       a_output (bool): boolean flag indicating whether output files should
         be produced
       a_out_dir (str): directory for writing output files
       a_out_sfx (str): suffix which should be appended to output files
       a_folds (int): number of folds
       a_encoding (str): default output encoding
+      a_read_trees (func): method for reading input trees
 
     Returns:
       tuple: lists of macro F-scores, micro F-scores, and F1_{tp,fp}
@@ -317,12 +404,14 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs,
         "Unmatching number of files with trees and segments."
     # make file names in `a_fname2trees` and `a_fname2segs` uniform and convert
     # segment classes to strings
-    a_fname2segs = {os.path.splitext(os.path.basename(k))[0] + a_out_sfx:
+    seg_sfx_re = re.compile(re.escape(a_seg_sfx) + '$')
+    a_fname2segs = {seg_sfx_re.sub("", os.path.basename(k)) + a_out_sfx:
                     [str(iseg) for iseg in v]
                     for k, v in a_fname2segs.iteritems()}
-    ofname2ifname = {os.path.splitext(os.path.basename(k))[0] + a_out_sfx: k
+    tree_sfx_re = re.compile(re.escape(a_tree_sfx) + '$')
+    ofname2ifname = {tree_sfx_re.sub("", os.path.basename(k)) + a_out_sfx: k
                      for k in a_fname2trees}
-    a_fname2trees = {os.path.splitext(os.path.basename(k))[0] + a_out_sfx: v
+    a_fname2trees = {tree_sfx_re.sub("", os.path.basename(k)) + a_out_sfx: v
                      for k, v in a_fname2trees.iteritems()}
     # estimate the number of and generate folds
     fnames = a_fname2trees.keys()
@@ -332,9 +421,12 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs,
               " cross-validation: {:d}.".format(n_fnames),
               file=sys.stderr)
         return -1
-    folds = KFold(n_fnames, min(len(fnames), a_folds))
+    kf = KFold(n_splits=min(n_fnames, a_folds))
     # generate features for trees
-    fname2feats = {fname: [a_segmenter.featgen(t) for t in trees]
+    fname2feats = {fname: [a_segmenter.featgen(*t)
+                           if isinstance(t, tuple)
+                           else a_segmenter.featgen(t)
+                           for t in trees]
                    for fname, trees in a_fname2trees.iteritems()}
     # initialize auxiliary variables
     F1_tpfp = 0.
@@ -357,7 +449,7 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs,
     test_segs = []
     tp = fp = fn = tp_i = fp_i = fn_i = 0
     # iterate over folds
-    for i, (train, test) in enumerate(folds):
+    for i, (train, test) in enumerate(kf.split(fnames)):
         print("Fold: {:d}".format(i), file=sys.stderr)
         train_feats = [feat for k in train for feat in fname2feats[fnames[k]]]
         train_segs = [seg for k in train for seg in a_fname2segs[fnames[k]]]
@@ -369,7 +461,6 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs,
             test_feats += fname2feats[fnames[k]]
             test_segs += a_fname2segs[fnames[k]]
         # train classifier model
-        a_segmenter.model = BparSegmenter.DEFAULT_PIPELINE
         a_segmenter.model.fit(train_feats, train_segs)
         # obtain new predictions
         pred_segs = a_segmenter.model.predict(test_feats)
@@ -411,10 +502,11 @@ def crossval(a_segmenter, a_path, a_fname2trees, a_fname2segs,
                 out_fname = os.path.join(a_out_dir, test_fname)
                 with open(out_fname, "w") as ofile:
                     print("(TEXT", file=ofile)
-                    bparseg_segment(a_segmenter,
-                                    _read_files([in_fname],
-                                                a_encoding),
-                                    a_encoding, ofile)
+                    bpar_mate_segment(a_segmenter,
+                                      _read_files([in_fname], a_encoding),
+                                      a_encoding=a_encoding,
+                                      a_ostream=ofile,
+                                      a_read_trees=a_read_trees)
                     print(")", file=ofile)
         test_feats = []
         test_segs = []
@@ -470,55 +562,12 @@ def main(argv):
     parser_edseg.add_argument("files", help="input files",
                               nargs='*', metavar="file")
 
-    # bpar argument parser
-    parser_bpar = subparsers.add_parser(BPARSEG,
-                                        help="machine-learning discourse"
-                                        "segmenter for BitPar constituency"
-                                        " trees")
-    bpar_subparsers = parser_bpar.add_subparsers(help="action to perform",
-                                                 dest="mode")
-    parser_bpar_train = bpar_subparsers.add_parser(TRAIN,
-                                                   help="train new model"
-                                                   " on BitPar and segment"
-                                                   " files")
-    parser_bpar_train.add_argument("--cross-validate",
-                                   help="train model in cross-validation mode")
-    parser_bpar_train.add_argument("model",
-                                   help="path to file in which to store the"
-                                   " trained model", type=str)
-    _set_train_test_args(parser_bpar_train)
-
-    parser_bpar_cv = bpar_subparsers.add_parser(CV,
-                                                help="train and evaluate model"
-                                                " using cross-validation")
-    parser_bpar_cv.add_argument("-o", "--output-dir",
-                                help="output directory (leave empty for"
-                                " no output)", type=str, default="")
-    parser_bpar_cv.add_argument("model",
-                                help="path to the file in which the best"
-                                " trained model should be stored",
-                                type=str)
-    _set_train_test_args(parser_bpar_cv)
-
-    parser_bpar_test = bpar_subparsers.add_parser(TEST,
-                                                  help="test model on BitPar"
-                                                  " and segment files")
-    parser_bpar_test.add_argument("-m", "--model",
-                                  help="path to file containing model",
-                                  type=str,
-                                  default=BparSegmenter.DEFAULT_MODEL)
-    _set_train_test_args(parser_bpar_test)
-
-    parser_bpar_segment = bpar_subparsers.add_parser(SEGMENT,
-                                                     help="split BitPar trees"
-                                                     " into discourse units")
-    parser_bpar_segment.add_argument("-m", "--model",
-                                     help="path to file containing model",
-                                     type=str,
-                                     default=BparSegmenter.DEFAULT_MODEL)
-    parser_bpar_segment.add_argument("files", help="input files",
-                                     nargs='*', metavar="file")
-
+    # add bpar arguments
+    _set_bpar_mate_args(subparsers, BPARSEG, "BitPar constituency trees",
+                        BparSegmenter.DEFAULT_MODEL)
+    # add mate arguments
+    _set_bpar_mate_args(subparsers, MATESEG, "Mate dependency trees",
+                        MateSegmenter.DEFAULT_MODEL)
     args = parser.parse_args()
 
     # process input files
@@ -531,6 +580,15 @@ def main(argv):
         edseg_segment(ifiles, args.output_trees)
     # process input with bparseg
     else:
+        if args.dtype == BPARSEG:
+            read_trees = bpar_read_trees
+            read_tok_trees = bpar_read_tok_trees
+            trees2segs = bpar_trees2segs
+        else:
+            read_trees = mate_read_trees
+            read_tok_trees = mate_read_tok_trees
+            trees2segs = mate_trees2segs
+
         if args.mode == TRAIN or args.mode == CV:
             # make sure there is a directory for storing the model
             mdir = os.path.dirname(args.model)
@@ -542,31 +600,48 @@ def main(argv):
                           file=sys.stderr)
             else:
                 os.makedirs(mdir)
-            segmenter = BparSegmenter()
-            trees, segments = _read_trees_segments(args.bpar_dir, args.seg_dir,
-                                                   args.bpar_sfx, args.seg_sfx,
-                                                   args.mode == CV,
-                                                   args.encoding)
+
+            if args.dtype == BPARSEG:
+                segmenter = BparSegmenter(a_model=BparSegmenter.DEFAULT_PIPELINE)
+            else:
+                segmenter = MateSegmenter(model=MateSegmenter.DEFAULT_PIPELINE)
+
+            trees, segments = _read_trees_segments(
+                args.tree_dir, args.seg_dir,
+                args.tree_sfx, args.seg_sfx,
+                read_tok_trees, trees2segs,
+                args.mode == CV, args.encoding)
+
             if args.mode == TRAIN:
                 segmenter.train(trees, segments, args.model)
             else:
                 crossval(segmenter, args.model, trees, segments,
-                         bool(args.output_dir), args.output_dir)
+                         args.tree_sfx, args.seg_sfx,
+                         bool(args.output_dir), args.output_dir,
+                         a_read_trees=read_trees)
         else:
             assert os.path.exists(args.model) and \
                 os.path.isfile(args.model) and \
                 os.access(args.model, os.R_OK), \
                 "Can't read model file '{:s}'.".format(args.model)
-            segmenter = BparSegmenter(a_model=args.model)
-            if args.mode == TEST:
-                trees, segments = _read_trees_segments(args.bpar_dir,
-                                                       args.seg_dir,
-                                                       args.bpar_sfx,
-                                                       args.seg_sfx,
-                                                       args.encoding)
-                bparseg_test(segmenter, trees, segments)
+
+            if args.dtype == BPARSEG:
+                segmenter = BparSegmenter(a_model=args.model)
             else:
-                bparseg_segment(segmenter, ifiles, args.encoding)
+                segmenter = MateSegmenter(model=args.model)
+
+            if args.mode == TEST:
+                trees, segments = _read_trees_segments(
+                    args.tree_dir, args.seg_dir,
+                    args.tree_sfx, args.seg_sfx,
+                    a_read_tok_trees=read_tok_trees,
+                    a_trees2segs=trees2segs,
+                    a_encoding=args.encoding)
+                bpar_mate_test(segmenter, trees, segments)
+            else:
+                bpar_mate_segment(segmenter, ifiles, args.encoding,
+                                  a_read_trees=read_trees)
+
 
 ##################################################################
 # Main

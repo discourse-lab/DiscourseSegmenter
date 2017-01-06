@@ -6,7 +6,6 @@
 """Package providing discourse segmenter for Mate dependency graphs.
 
 Attributes:
-
   __all__ (List[str]): list of sub-modules exported by this package
   __author__ (str): package's author
   __email__ (str): email of package's author
@@ -17,17 +16,20 @@ Attributes:
 
 ##################################################################
 # Imports
-from .dependency_graph import (DependencyGraph, read_deptree_file,
-                               HEAD, DEPS, REL, TAG, ADDRESS,
-                               TOP_TAG_LABEL, TOP_RELATION_LABEL)
-from .segmentation_tree import read_segtree_file, generate_subtrees_from_forest
+from __future__ import absolute_import, unicode_literals
+
+from dsegmenter.mateseg.dependency_graph import DependencyGraph, \
+    read_trees, read_tok_trees, HEAD, ADDRESS, TOP_TAG_LABEL, \
+    TOP_RELATION_LABEL
+from dsegmenter.mateseg.matesegmenter import MateSegmenter, \
+    trees2segs
 
 ##################################################################
 # Intialization
 __name__ = "mateseg"
-__all__ = ["DependencyGraph", "HEAD", "DEPS", "REL", "TAG", "ADDRESS",
-           "TOP_TAG_LABEL", "TOP_RELATION_LABEL", "read_deptree_file",
-           "read_segtree_file", "generate_subtrees_from_forest"]
+__all__ = ["DependencyGraph", "HEAD", "ADDRESS",
+           "TOP_TAG_LABEL", "TOP_RELATION_LABEL", "MateSegmenter",
+           "read_trees", "read_tok_trees", "trees2segs"]
 __author__ = "Andreas Peldszus"
 __email__ = "peldszus at uni dash potsdam dot de"
-__version__ = "0.1.0"
+__version__ = "0.2.0"

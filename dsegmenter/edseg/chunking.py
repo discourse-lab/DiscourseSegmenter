@@ -26,6 +26,8 @@ UnificationFailure - exception raise on non-merged feature bits
 
 ##################################################################
 # Libraries
+from __future__ import unicode_literals
+
 from .finitestateparsing import constraint, FiniteStateParser
 
 from copy import deepcopy
@@ -35,7 +37,7 @@ import sys
 ##################################################################
 # Methods
 def catgetter(token):
-    return token['pos']
+    return token["pos"]
 
 
 ##################################################################
@@ -67,15 +69,15 @@ class FeatureMatrix(object):
     """
 
     FEATS = [
-        'nom',
-        'acc',
-        'dat',
-        'gen',
-        'sg',
-        'pl',
-        'masc',
-        'fem',
-        'neut',
+        "nom",
+        "acc",
+        "dat",
+        "gen",
+        "sg",
+        "pl",
+        "masc",
+        "fem",
+        "neut",
     ]
 
     _FEAT_INDICES = dict((feat, idx) for (idx, feat) in enumerate(FEATS))
@@ -129,7 +131,7 @@ class FeatureMatrix(object):
         @return this FeatureMatrix instance
 
         """
-        if not hasattr(other, '_bits'):
+        if not hasattr(other, "_bits"):
             return False
         bits = self._bits & other._bits
         if not self._unified(bits):
@@ -145,7 +147,7 @@ class FeatureMatrix(object):
         @return this FeatureMatrix instance
 
         """
-        if not hasattr(other, '_bits'):
+        if not hasattr(other, "_bits"):
             return False
         return self._unified(self._bits & other._bits)
 
@@ -187,42 +189,42 @@ class Chunker(object):
         # make a deep copy of sentence, in order not to use it destructively
         isent = deepcopy(sent)
         for token in isent:
-            if token['pos'] in ('ART', 'NE', 'NN'):
-                if isinstance(token['feat'], basestring):
-                    token['feat'] = FeatureMatrix.from_string(token['feat'])
-                elif isinstance(token['feat'], dict):
-                    token['feat'] = FeatureMatrix.from_dict(token['feat'])
+            if token["pos"] in ("ART", "NE", "NN"):
+                if isinstance(token["feat"], basestring):
+                    token["feat"] = FeatureMatrix.from_string(token["feat"])
+                elif isinstance(token["feat"], dict):
+                    token["feat"] = FeatureMatrix.from_dict(token["feat"])
         return self._parser.parse(isent, catgetter=catgetter)
 
     def _setup_parser(self):
         add_rule = self._parser.add_rule
 
-        add_rule('NC',
-            '''
-            <PPER>
-            ''',
-            level=1)
+        add_rule("NC",
+                 """
+                 <PPER>
+                 """,
+                 level=1)
 
         @constraint
         def nc_month_spec_constraint(match):
-            if match[2][0]['lemma'] not in ('Anfang', 'Mitte', 'Ende'):
+            if match[2][0]["lemma"] not in ("Anfang", "Mitte", "Ende"):
                 return False
-            return match[3][0]['lemma'] in ('Januar',
-                                            'Februar',
-                                            u'März',
-                                            'Maerz',
-                                            'April',
-                                            'Mai',
-                                            'Juni',
-                                            'Juli',
-                                            'August',
-                                            'September',
-                                            'Oktober',
-                                            'November',
-                                            'Dezember')
+            return match[3][0]["lemma"] in ("Januar",
+                                            "Februar",
+                                            "März",
+                                            "Maerz",
+                                            "April",
+                                            "Mai",
+                                            "Juni",
+                                            "Juli",
+                                            "August",
+                                            "September",
+                                            "Oktober",
+                                            "November",
+                                            "Dezember")
 
-        add_rule('NC',
-                 '''
+        add_rule("NC",
+                 """
                  (?:
                  ^
                  |
@@ -232,7 +234,7 @@ class Chunker(object):
                  (<NN>)
                  (<NN>)
                  )
-                 ''',
+                 """,
                  constraint=nc_month_spec_constraint,
                  group=1, level=1)
 
@@ -243,16 +245,16 @@ class Chunker(object):
                 return True
             noun = match[2][0]
             try:
-                if hasattr(noun['feat'], 'unify'):
-                    noun['feat'].unify(det[0])
+                if hasattr(noun["feat"], "unify"):
+                    noun["feat"].unify(det[0])
                 else:
                     return False
             except UnificationFailure:
                 return False
             return True
 
-        add_rule('NC',
-                 '''
+        add_rule("NC",
+                 """
                  (?:
                  (<ART>)<PIAT>?
                  |
@@ -270,12 +272,12 @@ class Chunker(object):
                 )*
                  )?
                  ([<NE><NN>])
-                 ''',
+                 """,
                  constraint=nc_det_noun_agreement,
                  level=1)
 
-        add_rule('NC',
-                 '''
+        add_rule("NC",
+                 """
                  (?:
                  <ART><PIAT>?
                  |
@@ -283,31 +285,31 @@ class Chunker(object):
                  )
                  <PC>
                  <NC>
-                 ''',
+                 """,
                  level=3)
 
-        add_rule('PC',
-                 '''
+        add_rule("PC",
+                 """
                  <APPR>   # preposition
                  <NC>?
                  <PDS>
-                 ''',
+                 """,
                  level=2)
 
         @constraint
         def pc_genitive_adjunct_constraint(match):
             node = match[1][0]
-            if node.last_child['pos'] != 'NN':
+            if node.last_child["pos"] != "NN":
                 return False
             art = node.first_child
-            if art is None or art['pos'] != 'ART':
+            if art is None or art["pos"] != "ART":
                 return False
-            if (not 'feats' in art) or not hasattr(art['feats'], 'unifies'):
+            if "feat" not in art or not hasattr(art["feats"], "unifies"):
                 return False
-            return art['feats'].unifies(FeatureMatrix('gen'))
+            return art["feat"].unifies(FeatureMatrix("gen"))
 
-        add_rule('PC',
-                 '''
+        add_rule("PC",
+                 """
                  [<APPR><APRRART>]
                  <NC>
                  (?:
@@ -320,12 +322,12 @@ class Chunker(object):
                  |
                  [<APZR><PROAV>]
                  )?
-                 ''',
+                 """,
                  constraint=pc_genitive_adjunct_constraint,
                  level=2)
 
-        add_rule('PC',
-                 '''
+        add_rule("PC",
+                 """
                  [<APPR><APPRART>]   # preposition
                  <APPR>?             # ("bis an das Ende")
                  (?:
@@ -348,26 +350,26 @@ class Chunker(object):
                  )?
                  )
                  [<APZR><PROAV>]?    # optional pronominal adverb
-                 ''',
+                 """,
                  level=2)
 
-        add_rule('AC',
-                 '''
+        add_rule("AC",
+                 """
                  <ADV>*
                  <PTKNEG>?
                  <ADJD>+
-                 ''',
+                 """,
                  level=3)
 
-        add_rule('AC',
-                 '''
+        add_rule("AC",
+                 """
                  <PTKA>?
                  <ADV>+
-                 ''',
+                 """,
                  level=3)
 
-        add_rule('AC',
-                 '''
+        add_rule("AC",
+                 """
                  <PROAV>
-                 ''',
+                 """,
                  level=3)

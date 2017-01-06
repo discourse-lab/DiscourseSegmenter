@@ -26,14 +26,15 @@ from __future__ import absolute_import
 
 from dsegmenter.bparseg.constants import ENCODING, NO_PARSE_RE, WORD_SEP
 from dsegmenter.bparseg.bparsegmenter import BparSegmenter, \
-    read_trees, read_segments, trees2segs
-from dsegmenter.bparseg.constituency_tree import CTree
+    read_trees, read_tok_trees, trees2segs
+from dsegmenter.bparseg.constituency_tree import CTree, OP, OP_RE, CP, CP_RE
 
 ##################################################################
 # Intialization
 __name__ = "bparseg"
 __all__ = ["ENCODING", "NO_PARSE_RE", "WORD_SEP", "BparSegmenter", "CTree",
-           "read_trees", "read_segments", "trees2segs"]
+           "OP", "OP_RE", "CP", "CP_RE", "read_trees", "read_tok_trees",
+           "trees2segs"]
 __author__ = "Uladzimir Sidarenka"
 __email__ = "sidarenk at uni dash potsdam dot de"
 __version__ = "0.0.1"

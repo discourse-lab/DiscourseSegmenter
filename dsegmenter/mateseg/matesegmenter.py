@@ -1,32 +1,38 @@
 #!/usr/bin/env python2.7
 # -*- mode: python; coding: utf-8; -*-
 
-'''
-Created on 03.01.2015
+"""Created on 03.01.2015
 
 @author: Andreas Peldszus
-'''
+
+"""
 
 ##################################################################
 # Imports
-from .dependency_graph import HEAD, WORD, REL, TAG, ADDRESS
-from .segmentation_tree import generate_subtrees_from_forest
-from ..treeseg import (TreeSegmenter, DiscourseSegment, DEPENDENCY,
-                       DEFAULT_SEGMENT)
-from ..treeseg.treesegmenter import NO_MATCH_STRING
-from ..treeseg.constants import GREEDY
-from ..bparseg.align import nw_align
+from __future__ import absolute_import, print_function, unicode_literals
+
+from dsegmenter.common import NONE, prune_punc, score_substitute, \
+    translate_toks
+
+from dsegmenter.mateseg.dependency_graph import HEAD, WORD, REL, TAG, ADDRESS
+from dsegmenter.mateseg.segmentation_tree import generate_subtrees_from_forest
+from dsegmenter.treeseg import (TreeSegmenter, DiscourseSegment, DEPENDENCY,
+                                DEFAULT_SEGMENT)
+from dsegmenter.treeseg.treesegmenter import NO_MATCH_STRING
+from dsegmenter.treeseg.constants import GREEDY
+from dsegmenter.bparseg.align import nw_align
 
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import VarianceThreshold
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 from sklearn.svm import LinearSVC
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.externals import joblib
 
 import numpy as np
 import os
+import sys
 
 ##################################################################
 # Variables and Constants
@@ -39,8 +45,72 @@ PREDICTION = 'prediction'
 
 ##################################################################
 # Methods
+def trees2segs(a_toks2trees, a_toks2segs):
+    """Align trees with corresponding segments.
+
+    Args:
+      a_toks2trees (dict): mapping from tokens to trees
+      a_toks2segs (dict): mapping from tokens to segments
+
+    Returns:
+      dict: mapping from trees to segments
+
+    """
+    # prune empty trees and their corresponding segments
+    tree2seg = {t: None
+                for val in a_toks2trees.itervalues()
+                for t in val}
+    # add additional keys to `a_toks2trees` by pruning punctuation marks from
+    # existing trees
+    pruned_toks = None
+    tree_tok_keys = a_toks2trees.keys()
+    for tree_toks in tree_tok_keys:
+        pruned_toks = prune_punc(tree_toks)
+        if pruned_toks not in a_toks2trees:
+            a_toks2trees[pruned_toks] = a_toks2trees[tree_toks]
+    # establish a mapping between tree tokens and segment tokens
+    tree_toks = list(set([t
+                          for t_set in a_toks2trees.iterkeys()
+                          for t in t_set]))
+    tree_toks.sort(key=lambda el: el[0])
+    seg_toks = list(set([t
+                         for t_set in a_toks2segs.iterkeys()
+                         for t in t_set]))
+    seg_toks.sort(key=lambda el: el[0])
+    # align tokens if necessary
+    seg_t2tree_t = None
+    if tree_toks != seg_toks:
+        seg_t2tree_t = dict()
+        alignment = nw_align(seg_toks, tree_toks,
+                             substitute=score_substitute,
+                             keep_deleted=True)
+        for i, tt in enumerate(alignment):
+            seg_t2tree_t[seg_toks[i]] = [tree_toks[j] for j in tt]
+        # for each segment look if its corresponding token set is matched by
+        # any other subtree
+        translated_toks = None
+    for toks, segs in a_toks2segs.iteritems():
+        translated_toks = translate_toks(toks, seg_t2tree_t)
+        key = None
+        if translated_toks in a_toks2trees:
+            key = translated_toks
+        else:
+            translated_toks = prune_punc(translated_toks)
+            if translated_toks in a_toks2trees:
+                key = translated_toks
+        if key:
+            for tree in a_toks2trees[key]:
+                # if tree2seg[tree] is not None:
+                #     continue
+                assert tree2seg[tree] is None, \
+                    "Multiple segments found for tree" + repr(tree) + ": " + \
+                    repr(segs[-1]) + "; " + repr(tree2seg[tree])
+                tree2seg[tree] = segs[-1]
+    return tree2seg
+
+
 def gen_features_for_segment(dep_graph, trg_adr):
-    ''' ugly feature extraction code  ;) '''
+    """ ugly feature extraction code  ;) """
 
     nodes = list(dep_graph.subgraphs(exclude_root=False))
     nl = {node[ADDRESS]: node for node in nodes}
@@ -127,7 +197,7 @@ def word_access(x):
 
 
 def substitution_costs(c1, c2):
-    '''defines the costs of substitutions for the alignment'''
+    """defines the costs of substitutions for the alignment"""
     if c1[-1] == c2[-1]:
         return 2
     else:
@@ -135,7 +205,7 @@ def substitution_costs(c1, c2):
 
 
 def chained(iterable):
-    '''flattens a single embed iterable'''
+    """flattens a single embed iterable"""
     return list(elm for sublist in iterable for elm in sublist)
 
 
@@ -180,7 +250,8 @@ def get_training_observations(seg_trees, dep_trees):
         for seg_sub_tree in generate_subtrees_from_forest(seg_trees):
             node = seg_sub_tree.label()
             if node is None or node == "":
-                print "Warning: Empty node.", sentence_index
+                print("Warning: Empty node.", sentence_index,
+                      file=sys.stderr)
             if unequal_tokenizations:
                 seg_leaves = set([seg_to_dep_tok[leaf]
                                  for leaf in seg_sub_tree.leaves()])
@@ -220,11 +291,12 @@ def _cnt_stat(a_gold_segs, a_pred_segs):
 
 
 def decision_function(node, tree):
-    '''decision function for the tree segmenter'''
+    """decision function for the tree segmenter"""
     assert PREDICTION in node, "No prediction for node {}".format(node)
     pred = node[PREDICTION]
     # pred = NO_MATCH_STRING
-    if pred == NO_MATCH_STRING and HEAD in node and node[HEAD] == 0:
+    if (pred == NO_MATCH_STRING or pred == NONE) and HEAD in node \
+       and node[HEAD] == 0:
         # The classifier did not recognize sentence top as a segment, so we
         # enforce a labelling with the default segment type.
         return DEFAULT_SEGMENT
@@ -232,18 +304,22 @@ def decision_function(node, tree):
         return pred
 
 
+##################################################################
+# Class
 class MateSegmenter(object):
     """Class for perfoming discourse segmentation on constituency trees.
 
     """
 
     #: classifier object: default classification method
-    DEFAULT_CLASSIFIER = LinearSVC(multi_class='ovr', class_weight='auto')
+    DEFAULT_CLASSIFIER = LinearSVC(multi_class="ovr",
+                                   class_weight="balanced")
 
-    #:str: path  to default model to use in classification
-    DEFAULT_MODEL = os.path.join(os.path.dirname(__file__), "data", "mate.model")
+    #: path  to default model to use in classification
+    DEFAULT_MODEL = os.path.join(os.path.dirname(__file__),
+                                 "data", "mate.model")
 
-    #:pipeline object: default pipeline object used for classification
+    #: default pipeline object used for classification
     DEFAULT_PIPELINE = Pipeline([
         ('vectorizer', DictVectorizer()),
         ('var_filter', VarianceThreshold()),
@@ -253,13 +329,14 @@ class MateSegmenter(object):
         """Class constructor.
         """
         self.featgen = featgen
-        self.pipeline = None
+        self.model = None
         self._update_model(model)
+        self._segmenter = TreeSegmenter(a_type=DEPENDENCY)
 
     def extract_features_from_corpus(self, dep_corpus, seg_corpus=None):
         all_features = []
         all_labels = []
-        for text in sorted(dep_corpus.keys()):
+        for text in dep_corpus:
             seg_forest = seg_corpus.get(text, None)
             features, labels = self.extract_features_from_text(
                 dep_corpus[text], seg_forest=seg_forest)
@@ -276,15 +353,27 @@ class MateSegmenter(object):
             labels.append(class_)
         return features, labels
 
-    def segment(self, dep_corpus, out_folder):
-        for text, trees in dep_corpus.iteritems():
-            print text
-            discourse_tree = self.segment_text(trees)
-            with open(out_folder + '/' + text + '.tree', 'w') as fout:
-                fout.write(str(discourse_tree))
+    def segment(self, a_trees):
+        """Create discourse segments based on the Mate trees.
+
+        Args:
+          a_trees (list): list of sentence trees to be parsed
+
+        Returns:
+          list: constructed segment trees
+
+        """
+        segments = []
+        features = predictions = None
+        for itree in a_trees:
+            features, _ = self.extract_features_from_text([itree])
+            predictions = self._predict(features)
+            segments.append(self._segment_sentence(
+                predictions, itree)[0][1])
+        return (segments,)
 
     def segment_text(self, dep_forest):
-        features, _ = self.extract_features_from_text(dep_forest)
+        features = self.extract_features_from_text(dep_forest)
         predictions = self._predict(features)
         return self._segment_text(predictions, dep_forest)
 
@@ -299,7 +388,7 @@ class MateSegmenter(object):
             segments = self._segment_sentence(sentence_predictions, dep_graph)
             segment = segments[0][1]
             all_segments.append((sentence, segment))
-        return DiscourseSegment(a_name='TEXT', a_leaves=all_segments)
+        return DiscourseSegment(a_name=DEFAULT_SEGMENT, a_leaves=all_segments)
 
     def _segment_sentence(self, sentence_predictions, dep_graph):
         if dep_graph.is_valid_parse_tree():
@@ -308,8 +397,7 @@ class MateSegmenter(object):
             # annotate dep_graph with sentence predictions
             dep_graph.annotate(sentence_predictions, PREDICTION)
             # call tree_segmenter
-            segmenter = TreeSegmenter(a_type=DEPENDENCY)
-            segments = segmenter.segment(
+            segments = self._segmenter.segment(
                 dep_graph, a_predict=decision_function,
                 a_word_access=word_access, a_strategy=GREEDY,
                 a_root_idx=dep_graph.root[ADDRESS])
@@ -321,27 +409,38 @@ class MateSegmenter(object):
             segments = [(0, dseg)]
         return segments
 
-    def train(self, seg_corpus, dep_corpus, path=None):
-        assert seg_corpus.keys() == dep_corpus.keys()
-        features, labels = self.extract_features_from_corpus(
-            dep_corpus, seg_corpus=seg_corpus)
-        self._train(features, labels)
+    def train(self, trees, segments, path=None):
+        """Train segmenter model.
+
+        Args:
+          a_trees (list): BitPar trees
+          a_segs (list): discourse segments
+          a_path (str): path to file in which the trained model should be
+                        stored
+
+        Returns:
+          void:
+
+        """
+        features = [self.featgen(t, n) for t, n in trees]
+        segments = [str(s) for s in segments]
+        self._train(features, segments)
         if path is not None:
-            joblib.dump(self.pipeline, path, compress=1, cache_size=1e9)
+            joblib.dump(self.model, path, compress=1, cache_size=1e9)
 
     def _train(self, features, labels):
-        self.pipeline = MateSegmenter.DEFAULT_PIPELINE
-        self.pipeline.fit(features, labels)
+        self.model = MateSegmenter.DEFAULT_PIPELINE
+        self.model.fit(features, labels)
 
-    def test(self, seg_corpus, dep_corpus):
-        assert seg_corpus.keys() == dep_corpus.keys()
-        features, labels = self.extract_features_from_corpus(
-            dep_corpus, seg_corpus=seg_corpus)
-        predicted_labels = self._predict(features)
-        return self._score(labels, predicted_labels)
+    def test(self, trees, segments):
+        predictions = [self.model.predict(self.featgen(t, n))
+                       for t, n in trees]
+        segments = [str(s) for s in segments]
+        return self._score(segments, predictions)
 
     def _predict(self, features):
-        return self.pipeline.predict(features)
+        return [None if p == NONE else p
+                for p in self.model.predict(features)]
 
     def _score(self, labels, predicted_labels):
         _, _, macro_f1, _ = precision_recall_fscore_support(
@@ -353,7 +452,7 @@ class MateSegmenter(object):
     def cross_validate(self, seg_corpus, dep_corpus, out_folder=None):
         assert seg_corpus.keys() == dep_corpus.keys()
         texts = np.array(sorted(seg_corpus.keys()))
-        folds = KFold(len(texts), number_of_folds)
+        kf = KFold(n_splits=number_of_folds)
 
         # extract features for all texts
         all_features = {}
@@ -368,18 +467,20 @@ class MateSegmenter(object):
         macro_F1s = []
         micro_F1s = []
         tp = fp = fn = tp_i = fp_i = fn_i = 0
-        for i, (train, test) in enumerate(folds):
-            print "# FOLD", i
+        for i, (train, test) in enumerate(kf.split(texts)):
+            print("# FOLD", i, file=sys.stderr)
             # train
             train_texts = texts[train]
             train_features = chained([all_features[text] for text in
                                       train_texts])
             train_labels = chained([all_labels[text] for text in train_texts])
-            print "  training on %d items..." % len(train_labels)
+            print("  training on {:d} items...".format(len(train_labels)),
+                  file=sys.stderr)
             self._train(train_features, train_labels)
-            print "  extracted %d features using the dict vectorizer." % \
-                len(self.pipeline.named_steps[
-                    'vectorizer'].get_feature_names())
+            print(
+                "  extracted {:d} features using the dict vectorizer.".format(
+                    len(self.model.named_steps[
+                        'vectorizer'].get_feature_names())), file=sys.stderr)
             # test (predicting textwise)
             test_labels = []
             pred_labels = []
@@ -402,22 +503,22 @@ class MateSegmenter(object):
             fp += fp_i
             fn += fn_i
 
-        print "# Average Macro F1 = %3.1f +- %3.2f" % \
-            (100 * np.mean(macro_F1s), 100 * np.std(macro_F1s))
-        print "# Average Micro F1 = %3.1f +- %3.2f" % \
-            (100 * np.mean(micro_F1s), 100 * np.std(micro_F1s))
-        if tp or fp or fn:
-            print "# F1_{tp,fp} %.2f" % (2. * tp / (2. * tp + fp + fn) * 100)
-        else:
-            print "# F1_{tp,fp} 0. %"
+        # print "# Average Macro F1 = %3.1f +- %3.2f" % \
+        #     (100 * np.mean(macro_F1s), 100 * np.std(macro_F1s))
+        # print "# Average Micro F1 = %3.1f +- %3.2f" % \
+        #     (100 * np.mean(micro_F1s), 100 * np.std(micro_F1s))
+        # if tp or fp or fn:
+        #     print "# F1_{tp,fp} %.2f" % (2. * tp / (2. * tp + fp + fn) * 100)
+        # else:
+        #     print "# F1_{tp,fp} 0. %"
 
     def _update_model(self, model):
         if model is None:
-            self.pipeline = MateSegmenter.DEFAULT_PIPELINE
+            self.model = MateSegmenter.DEFAULT_PIPELINE
         elif isinstance(model, str):
             if not os.path.isfile(model) or not os.access(model, os.R_OK):
                 raise RuntimeError("Can't load model from file {:s}".format(
                     model))
-            self.pipeline = joblib.load(model)
+            self.model = joblib.load(model)
         else:
-            self.pipeline = model
+            self.model = model

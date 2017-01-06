@@ -6,14 +6,9 @@
 """Module providing discourse segmenter for constituency trees.
 
 Attributes:
-  SUBSTITUTEF (method): custom weighting function used for token alignment
-  _ispunct (method): check if word consists only of punctuation characters
-  _prune_punc (method): remove tokens representing punctuation from set
-  _translate_toks (method): replace tokens and return updated set
   tree2tok (method): create dictionary mapping constituency trees to numbered
     tokens
   read_trees (method): read file and return a list of constituent dictionaries
-  read_segments (method): read file and return a list of segment dictionaries
   trees2segs (method): align trees with corresponding segments
   featgen (method): default feature generation function
   classify (method): default classification method
@@ -25,89 +20,37 @@ Attributes:
 
 ##################################################################
 # Libraries
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
+
+from dsegmenter.common import NONE, prune_punc, score_substitute, \
+    translate_toks
 
 from dsegmenter.bparseg.align import nw_align
-from dsegmenter.bparseg.constants import ENCODING
 from dsegmenter.bparseg.constituency_tree import Tree, CTree
 from dsegmenter.treeseg import TreeSegmenter, DiscourseSegment, \
     CONSTITUENCY, DEFAULT_SEGMENT
 
-# from sklearn.cross_validation import KFold
 from sklearn.externals import joblib
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.feature_selection import VarianceThreshold, SelectKBest
-from sklearn.metrics import precision_recall_fscore_support, \
-    classification_report, confusion_matrix
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.metrics import precision_recall_fscore_support
 from sklearn.pipeline import Pipeline
-from sklearn.svm import SVC, LinearSVC
+from sklearn.svm import LinearSVC
 
 import locale
 import os
 import re
-import sys
-import string
 
 ##################################################################
 # Constants
-NONE = str(None)
+locale.setlocale(locale.LC_ALL, "")
 N_FOLDS = 10
-SUBSTITUTEF = lambda c1, c2: 2 if c1[-1] == c2[-1] else -3
 ESCAPE_QUOTE_RE = re.compile(r"\\+([\"'])")
 ESCAPE_SLASH_RE = re.compile(r"\\/")
 
+
 ##################################################################
 # Methods
-locale.setlocale(locale.LC_ALL, "")
-
-
-def _ispunct(a_word):
-    """Check if word consists only of punctuation characters.
-
-    Args:
-      a_word (str): word to check
-
-    Returns:
-      bool: True if word consists only of punctuation characters,
-        False otherwise
-
-    """
-    return all(c in string.punctuation for c in a_word)
-
-
-def _prune_punc(a_toks):
-    """Remove tokens representing punctuation from set.
-
-    Args:
-      a_toks (iterable): original tokens
-
-    Returns:
-      frozenset: tokens without punctuation marks
-
-    """
-    return frozenset([tok for tok in a_toks if not _ispunct(tok[-1])])
-
-
-def _translate_toks(a_toks, a_translation):
-    """Translate tokens and return translated set.
-
-    Args:
-      a_toks (iterable): tokens to be translated
-      a_translation (dict): - translation dictionary for tokens
-
-    Returns:
-      frozenset: translated tokens
-
-    """
-    if a_translation is None:
-        return a_toks
-    ret = set()
-    for tok in a_toks:
-        for t_tok in a_translation[tok]:
-            ret.add(t_tok)
-    return frozenset(ret)
-
-
 def tree2tok(a_tree, a_start=0):
     """Create dictionary mapping constituency trees to numbered tokens.
 
@@ -123,7 +66,6 @@ def tree2tok(a_tree, a_start=0):
     chset = None
     tr2tk = {(a_start, a_tree.label()): (a_tree, rset)}
     i = a_start
-    max_ch_pos = -1
     for child in a_tree:
         if isinstance(child, Tree):
             tr2tk.update(tree2tok(child, i))
@@ -136,14 +78,16 @@ def tree2tok(a_tree, a_start=0):
     return tr2tk
 
 
-def read_trees(a_lines, a_one_per_line=False):
+def read_tok_trees(a_lines, a_one_per_line=False):
     """Read file and return a list of constituent dictionaries.
 
     Args:
       a_lines (list[str]): decoded lines of the input file
+      a_one_per_line (bool): boolean flag indicating whether each
+        tree is stored on a separate line
 
     Returns:
-      tuple: list of dictionaries mapping tokens to trees and a list of trees
+      2-tuple: list of dictionaries mapping tokens to trees and a list of trees
 
     """
     ctrees = CTree.parse_lines(a_lines, a_one_per_line=a_one_per_line)
@@ -166,73 +110,20 @@ def read_trees(a_lines, a_one_per_line=False):
     return toks2trees, ctrees
 
 
-def read_segments(a_lines):
-    """Read file and return a list of segment dictionaries.
+def read_trees(a_lines, a_one_per_line=False):
+    """Read file and return a list of constituent dictionaries.
 
     Args:
-      a_lines (list): decoded lines of the input file
+      a_lines (list[str]): decoded lines of the input file
+      a_one_per_line (bool): boolean flag indicating whether each
+        tree is stored on a separate line
 
-    Returns:
-      dict: mapping from tokens to segments
+    Yields:
+      CTree: input tree
 
     """
-    segs2toks = {}
-    s_c = t_c = 0
-    tokens = []
-    atoks = []
-    new_seg = None
-    active_tokens = set()
-    active_segments = []
-    # read segments
-    for iline in a_lines:
-        iline = iline.strip()
-        if not iline:
-            continue
-        # do some clean-up
-        active_tokens.clear()
-        del atoks[:]
-        del active_segments[:]
-        tokens = iline.split()
-        # establish correspondence between tokens and segments
-        for tok in tokens:
-            if tok[0] == '(' and len(tok) > 1:
-                active_tokens = set(atoks)
-                del atoks[:]
-                for a_s in active_segments:
-                    segs2toks[a_s].update(active_tokens)
-                new_seg = (s_c, tok[1:])
-                active_segments.append(new_seg)
-                segs2toks[new_seg] = set()
-                s_c += 1
-                continue
-            elif tok == ')':
-                assert active_segments, \
-                    "Unbalanced closing parenthesis at line: " + repr(iline)
-                active_tokens = set(atoks)
-                del atoks[:]
-                for a_s in active_segments:
-                    segs2toks[a_s].update(active_tokens)
-                active_segments.pop()
-                continue
-            else:
-                atoks.append((t_c, tok))
-                t_c += 1
-        assert not active_segments, \
-            "Unbalanced opening parenthesis at line: " + repr(iline)
-    toks2segs = dict()
-    segments = segs2toks.keys()
-    segments.sort(key=lambda el: el[0])
-    for seg in segments:
-        toks = frozenset(segs2toks[seg])
-        # it can be same tokenset corresponds to multiple segments, in that
-        # case we leave the first one that we encounter
-        if toks in toks2segs:
-            continue
-        assert toks not in toks2segs, \
-            "Multiple segments correspond to the same tokenset: '" + \
-            repr(toks) + "': " + repr(seg) + ", " + repr(toks2segs[toks])
-        toks2segs[toks] = seg
-    return toks2segs
+    for ctree in CTree.parse_lines(a_lines, a_one_per_line=a_one_per_line):
+        yield ctree
 
 
 def trees2segs(a_toks2trees, a_toks2segs):
@@ -247,38 +138,45 @@ def trees2segs(a_toks2trees, a_toks2segs):
 
     """
     # prune empty trees and their corresponding segments
-    tree2seg = {t: None for val in a_toks2trees.values() for t in val}
+    tree2seg = {t: None
+                for val in a_toks2trees.itervalues()
+                for t in val}
     # add additional keys to `a_toks2trees` by pruning punctuation marks from
     # existing trees
     pruned_toks = None
     tree_tok_keys = a_toks2trees.keys()
     for tree_toks in tree_tok_keys:
-        pruned_toks = _prune_punc(tree_toks)
+        pruned_toks = prune_punc(tree_toks)
         if pruned_toks not in a_toks2trees:
             a_toks2trees[pruned_toks] = a_toks2trees[tree_toks]
     # establish a mapping between tree tokens and segment tokens
-    tree_toks = list(set([t for t_set in a_toks2trees.keys() for t in t_set]))
+    tree_toks = list(set([t
+                          for t_set in a_toks2trees.iterkeys()
+                          for t in t_set]))
     tree_toks.sort(key=lambda el: el[0])
-    seg_toks = list(set([t for t_set in a_toks2segs.keys() for t in t_set]))
+    seg_toks = list(set([t
+                         for t_set in a_toks2segs.iterkeys()
+                         for t in t_set]))
     seg_toks.sort(key=lambda el: el[0])
     # align tokens if necessary
     seg_t2tree_t = None
     if tree_toks != seg_toks:
         seg_t2tree_t = dict()
         alignment = nw_align(seg_toks, tree_toks,
-                             substitute=SUBSTITUTEF, keep_deleted=True)
+                             substitute=score_substitute,
+                             keep_deleted=True)
         for i, tt in enumerate(alignment):
             seg_t2tree_t[seg_toks[i]] = [tree_toks[j] for j in tt]
         # for each segment look if its corresponding token set is matched by
         # any other subtree
         translated_toks = None
     for toks, segs in a_toks2segs.iteritems():
-        translated_toks = _translate_toks(toks, seg_t2tree_t)
+        translated_toks = translate_toks(toks, seg_t2tree_t)
         key = None
         if translated_toks in a_toks2trees:
             key = translated_toks
         else:
-            translated_toks = _prune_punc(translated_toks)
+            translated_toks = prune_punc(translated_toks)
             if translated_toks in a_toks2trees:
                 key = translated_toks
         if key:
@@ -364,7 +262,7 @@ class BparSegmenter(object):
 
     """
 
-    #: classifier object: default classification method
+    #:classifier object: default classification method
     DEFAULT_CLASSIFIER = LinearSVC(C=0.3, multi_class='crammer_singer')
 
     #:str: path  to default model to use in classification
