@@ -304,7 +304,7 @@ class Chunker(object):
             art = node.first_child
             if art is None or art["pos"] != "ART":
                 return False
-            if "feat" not in art or not hasattr(art["feats"], "unifies"):
+            if "feat" not in art or not hasattr(art["feat"], "unifies"):
                 return False
             return art["feat"].unifies(FeatureMatrix("gen"))
 
