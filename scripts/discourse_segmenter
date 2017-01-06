@@ -602,7 +602,8 @@ def main(argv):
                 os.makedirs(mdir)
 
             if args.dtype == BPARSEG:
-                segmenter = BparSegmenter(a_model=BparSegmenter.DEFAULT_PIPELINE)
+                segmenter = BparSegmenter(
+                    a_model=BparSegmenter.DEFAULT_PIPELINE)
             else:
                 segmenter = MateSegmenter(model=MateSegmenter.DEFAULT_PIPELINE)
 
