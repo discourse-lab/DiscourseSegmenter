@@ -4,8 +4,7 @@
 ##################################################################
 # Documentation
 
-"""
-Package providing rule-based discourse segmenter for CONLL dependency trees.
+"""Package providing rule-based discourse segmenter for CONLL trees.
 
 Attributes:
   chunking (module): routines for internal clause segmentation

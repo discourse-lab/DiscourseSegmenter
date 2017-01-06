@@ -36,14 +36,16 @@ import codecs
 ##################################################################
 # Methods
 def match(tokens, *search, **options):
-    """
-    Custom search on tokens for specified patterns
+    """Custom search on tokens for specified patterns
 
-    @param tokens - input tokens in which pattern should be searched
-    @param search - searched pattern
-    @param options - search options
+    Args:
+      tokens - input tokens in which pattern should be searched
+      search - searched pattern
+      options - search options
 
-    @return \c True if pattern was found, \c False otherwise
+    Returns:
+      bool: True if pattern was found, False otherwise
+
     """
     if options.get('reverse'):
         tokens = reversed(tokens)
@@ -57,44 +59,45 @@ def match(tokens, *search, **options):
             return False
     return True
 
+
 ##################################################################
 # Classes
 class Trie(object):
-    """
-    Implementation of the trie data structure
+    """Implementation of the trie data structure
 
     Constants:
-    _SENTINEL - default object to comapre with to ensure that the matched object is valid
+      _SENTINEL - default object to comapre with to ensure that the matched
+        object is valid
 
     Instance variables:
-    start - index of the start state of the trie from which to begin matching
-    _trans - transition table for the states
-    _final - dictionary mapping final states to corresponding tree labels
-    _last_state - last active state used for matching
+      start - index of the start state of the trie from which to begin matching
+      _trans - transition table for the states
+      _final - dictionary mapping final states to corresponding tree labels
+      _last_state - last active state used for matching
 
     Public methods:
-    add_word - add new word to the total trie
-    get - perform match operation on the given string
-    get_state - generate new state for the trie
-    set_final - remember given state as final and associate a lebel with it
-    is_final - check if given state is final
-    get_olabel - return label associated with given final state
-    set_olabel - set new label for the given final state
-    add_trans - add new transitions to the given state
-    get_trans - obtain transitions emitted by the given state
-    iter_trans - iterate over transitions of the given state
-    as_dot - output trie in dotty format
+      add_word - add new word to the total trie
+      get - perform match operation on the given string
+      get_state - generate new state for the trie
+      set_final - remember given state as final and associate a lebel with it
+      is_final - check if given state is final
+      get_olabel - return label associated with given final state
+      set_olabel - set new label for the given final state
+      add_trans - add new transitions to the given state
+      get_trans - obtain transitions emitted by the given state
+      iter_trans - iterate over transitions of the given state
+      as_dot - output trie in dotty format
 
     Exceptions:
-    NotFinal - exception raised when match does not reach final state
+      NotFinal - exception raised when match does not reach final state
 
     """
 
     class NotFinal(Exception):
-        """
-        Exception thrown when the trie has no more transitions and there is no default
+        """Exception thrown when the trie has no more transitions.
 
         This class subclasses `Exception`
+
         """
 
         pass

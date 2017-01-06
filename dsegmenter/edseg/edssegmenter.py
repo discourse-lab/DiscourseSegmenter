@@ -3,27 +3,23 @@
 
 ##################################################################
 # Documentation
-"""
-Module providing rule-based discourse segmenter `EDSSegmenter`.
+"""Module providing rule-based discourse segmenter `EDSSegmenter`.
 
-Constants:
-WESWEGEN_SET - set of strings representing causal connectives
-SDS_LABEL - label for sentence discourse segments
-EDS_LABEL - label for elementary discourse segments
-MAIN_CLAUSE - label for discourse segments that encompass main clauses
-SUB_CLAUSE - label for discourse segments that encompass subordinate clauses
-REL_CLAUSE - label for discourse segments that encompass restrictive relative clauses
-PAREN - label for parenthetical discourse segments
-DISCOURSE_PP - label for discourse segments formed by prepositional phrases
+Attributes:
+  WESWEGEN_SET (set): set of strings representing causal connectives
+  SDS_LABEL (str): label for sentence discourse segments
+  EDS_LABEL (str): label for elementary discourse segments
+  MAIN_CLAUSE (str): label for discourse segments that encompass main clauses
+  SUB_CLAUSE (str): label for discourse segments that encompass subordinate
+    clauses
+  REL_CLAUSE (str): label for discourse segments that encompass restrictive
+    relative clauses
+  PAREN (str): label for parenthetical discourse segments
+  DISCOURSE_PP (str): label for discourse segments formed by prepositional
+    phrases
+  EDSSegmenter (class): rule-based discourse segmenter
 
-Classes:
-EDSSegmenter - rule-based discourse segmenter
-
-Exceptions:
-
-@author = Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
-@mail = <vancoppenolle at uni dash potsdam dot de>, <sidarenk at uni dash potsdam dot de>
-@version = 0.0.1
+.. moduleauthor:: Jean VanCoppenolle, Wladimir Sidorenko (Uladzimir Sidarenka)
 
 """
 
@@ -47,24 +43,23 @@ REL_CLAUSE = 'RelCl'
 PAREN = 'Paren'
 DISCOURSE_PP = 'DiPP'
 
+
 ##################################################################
 # Classes
 class EDSSegmenter(object):
-    """
-    Class for perfoming discourse segmentation on CONLL dependency trees.
+    """Class for perfoming discourse segmentation on CONLL dependency trees.
 
-    Instance variables:
-    _clause_segmenter - internal worker for doing discourse segmentation
-    _clause_discarder - internal automaton which decides if sentence shouldn't
-                        be processed
-    _sent - internal reference to the sentence being processed
-    _tokens - internal reference to the list of processed tokens
+    Attributes:
+      _clause_segmenter: internal worker for doing discourse segmentation
+      _clause_discarder: internal automaton which decides if sentence
+        shouldn't be processed
+      _sent: internal reference to the sentence being processed
+      _tokens: internal reference to the list of processed tokens
+      segment: perform discourse segmentation of the CONLL sentence
 
-    Public methods:
-    segment - perform discourse segmentation of the CONLL sentence
     """
 
-    def __init__(self, a_clause_segmenter = None):
+    def __init__(self, a_clause_segmenter=None):
         """
         Class constructor.
 
@@ -74,17 +69,20 @@ class EDSSegmenter(object):
             self._clause_segmenter = ClauseSegmenter()
         else:
             self._clause_segmenter = a_clause_segmenter
-        self._clause_discarder = StartOfClauseMatcher.from_file(data.data_dir('skip_rules.txt'))
+        self._clause_discarder = StartOfClauseMatcher.from_file(
+            data.data_dir('skip_rules.txt'))
         self._sent = None
         self._tokens = []
 
     def segment(self, sent):
-        """
-        Method for segmenting CONLL trees.
+        """Segment CONLL trees.
 
-        @param sent - CONLL tree to process
+        Args:
+          sent (CONLLSentence)L CONLL tree to process
 
-        @return sentence-level discourse segment
+        Returns:
+          Segment: sentence-level discourse segment
+
         """
         self._sent = sent
         clauses = self._clause_segmenter.segment(sent)
@@ -104,7 +102,7 @@ class EDSSegmenter(object):
         if not self._is_token(child1) and child1.label == clause.label:
             for idx, child in enumerate(clause):
                 eds = self._process_clause(child, idx, clause, sds, eds,
-                                           depth = depth)
+                                           depth=depth)
             return eds
         self._tokens, prev_toks = list(clause.iter_terminals()), self._tokens
         if self._clause_discarder.match(self._tokens, prev_toks):

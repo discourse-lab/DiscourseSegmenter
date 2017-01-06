@@ -25,12 +25,10 @@ from dsegmenter.bparseg.align import nw_align
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import VarianceThreshold
-from sklearn.model_selection import KFold
 from sklearn.svm import LinearSVC
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.externals import joblib
 
-import numpy as np
 import os
 import sys
 
@@ -327,24 +325,24 @@ class MateSegmenter(object):
 
     def __init__(self, featgen=gen_features_for_segment, model=DEFAULT_MODEL):
         """Class constructor.
+
         """
         self.featgen = featgen
         self.model = None
         self._update_model(model)
         self._segmenter = TreeSegmenter(a_type=DEPENDENCY)
 
-    def extract_features_from_corpus(self, dep_corpus, seg_corpus=None):
-        all_features = []
-        all_labels = []
-        for text in dep_corpus:
-            seg_forest = seg_corpus.get(text, None)
-            features, labels = self.extract_features_from_text(
-                dep_corpus[text], seg_forest=seg_forest)
-            all_features.extend(features)
-            all_labels.extend(labels)
-        return all_features, all_labels
-
     def extract_features_from_text(self, dep_forest, seg_forest=None):
+        """Extract features from dependency trees.
+
+        Args:
+          dep_forrest (list): list of sentence trees to be parsed
+          dep_forrest (list or None): list of discourse segments
+
+        Returns:
+          2-tuple[list, list]: list of features and list of labels
+
+        """
         features = []
         labels = []
         observations = get_observations(seg_forest, dep_forest)
@@ -373,6 +371,16 @@ class MateSegmenter(object):
         return (segments,)
 
     def segment_text(self, dep_forest):
+        """Segment all sentences of a text.
+
+        Args:
+          dep_forrest (list[dsegmenter.mateseg.dependency_graph]): list
+            of sentence trees to be parsed
+
+        Returns:
+          list: constructed segment trees
+
+        """
         features = self.extract_features_from_text(dep_forest)
         predictions = self._predict(features)
         return self._segment_text(predictions, dep_forest)
@@ -433,6 +441,16 @@ class MateSegmenter(object):
         self.model.fit(features, labels)
 
     def test(self, trees, segments):
+        """Estimate performance of segmenter model.
+
+        Args:
+          a_trees (list): BitPar trees
+          a_segments (list): corresponding gold segments for trees
+
+        Returns:
+          2-tuple: macro and micro-averaged F-scores
+
+        """
         predictions = [self.model.predict(self.featgen(t, n))
                        for t, n in trees]
         segments = [str(s) for s in segments]

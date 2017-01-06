@@ -64,29 +64,13 @@ class CONLL(object):
     An instance of this class comprises information about one or multiple
     parsed sentences in CONLL format.
 
-    This class provides following instance variables:
-    self.sentences - list of all sentences gathered in tree forest
-    self.s_id      - list index of last parsed sentence
-
-    This class provides following public methods:
-    __init__()      - class constructor (can accept)
-
-    self.add_line() - parse specified single line and incrementally add
-                      it to the data of current tree or append a new tree
-                      to the forrest
-    self.is_empty() - return true if no sentences are stored
-    self.clear() - drop all stored information
-    self.get_words() - return list of words with their sentence and word
-                       indices
-    __str__()       - return string representation of current forrest
-    __getitem__()   - return sentence from forrest
-    __setitem__()   - set sentence in forrest
     """
 
     def __init__(self, istring=''):
         """Initialize instance variables and parse input string if specified.
 
-        @param istring - input string(s) with CONLL data (optional)
+        Args:
+          istring (basestring): input string(s) with CONLL data (optional)
 
         """
         self.s_id = -1
@@ -96,10 +80,14 @@ class CONLL(object):
             self.add_line(iline)
 
     def add_line(self, iline=u''):
-        """Parse line and add it as CONLL word to either current or new
-        sentence.
+        """Parse line and add it as CONLL word.
 
-        @param iline - input line(s) to parse
+        Args:
+          iline (basestring): input line(s) to parse
+
+        Returns:
+          void:
+
         """
         iline = iline.strip()
         if not iline or iline == EOS or iline == EOS_TAG:
@@ -125,10 +113,11 @@ class CONLL(object):
                 self.sentences[self.s_id].push_word(w)
 
     def is_empty(self):
-        """
-        Check whether any sentences are stored.
+        """Check whether any sentences are stored.
 
-        @return True if there is at least one sentence.
+        Returns:
+          bool: True if there is at least one sentence.
+
         """
         return self.s_id == -1
 
@@ -166,26 +155,32 @@ class CONLL(object):
         return self.__unicode__().encode("utf-8")
 
     def __getitem__(self, i):
-        """
-        Return reference to `i`-th sentence in forrest.
+        """Return reference to `i`-th sentence in forrest.
 
-        @param i - integer index of sentence in forrest
+        Args:
+          i (int): integer index of sentence in forrest
 
-        @return `i`-th CONLL sentence in forrest. IndexError is raised if `i`
-        is outside of forrest boundaries.
+        Returns:
+          CONLLSentence: `i`-th CONLL sentence in forrest.
+
+        Raises:
+          IndexError: is raised if `i` is outside of forrest boundaries.
 
         """
         return self.sentences[i]
 
     def __setitem__(self, i, value):
-        """
-        Set `i`-th sentence in forrest to specified value.
+        """Set `i`-th sentence in forrest to specified value.
 
-        @param i - integer index of sentence in forrest
-        @param value - CONLL sentence to which i-th sentence should be set
+        Args:
+          i (int): integer index of sentence in forrest
+          value (CONLLSentence): to which i-th sentence should be set
 
-        @return new value of `i`-th sentence. IndexError is raised if `i`
-        is outside of forrest boundaries.
+        Returns:
+          CONLLSentence:new value of `i`-th sentence
+
+        Raises:
+          IndexError: raised if `i` is outside of forrest boundaries.
 
         """
         self.sentences[i] = value
