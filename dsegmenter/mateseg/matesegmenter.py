@@ -467,69 +467,6 @@ class MateSegmenter(object):
             labels, predicted_labels, average='micro', warn_for=())
         return macro_f1, micro_f1
 
-    def cross_validate(self, seg_corpus, dep_corpus, out_folder=None):
-        assert seg_corpus.keys() == dep_corpus.keys()
-        texts = np.array(sorted(seg_corpus.keys()))
-        kf = KFold(n_splits=number_of_folds)
-
-        # extract features for all texts
-        all_features = {}
-        all_labels = {}
-        for text in texts:
-            features, labels = self.extract_features_from_text(
-                dep_corpus[text], seg_forest=seg_corpus[text])
-            all_features[text] = features
-            all_labels[text] = labels
-
-        # do the cross-validation
-        macro_F1s = []
-        micro_F1s = []
-        tp = fp = fn = tp_i = fp_i = fn_i = 0
-        for i, (train, test) in enumerate(kf.split(texts)):
-            print("# FOLD", i, file=sys.stderr)
-            # train
-            train_texts = texts[train]
-            train_features = chained([all_features[text] for text in
-                                      train_texts])
-            train_labels = chained([all_labels[text] for text in train_texts])
-            print("  training on {:d} items...".format(len(train_labels)),
-                  file=sys.stderr)
-            self._train(train_features, train_labels)
-            print(
-                "  extracted {:d} features using the dict vectorizer.".format(
-                    len(self.model.named_steps[
-                        'vectorizer'].get_feature_names())), file=sys.stderr)
-            # test (predicting textwise)
-            test_labels = []
-            pred_labels = []
-            for text in texts[test]:
-                features = all_features[text]
-                labels = all_labels[text]
-                predictions = self._predict(features)
-                test_labels.extend(labels)
-                pred_labels.extend(predictions)
-                if out_folder is not None:
-                    discourse_tree = self._segment_text(predictions,
-                                                        dep_corpus[text])
-                    with open(out_folder + '/' + text + '.tree', 'w') as fout:
-                        fout.write(str(discourse_tree))
-            macro_f1, micro_f1 = self._score(test_labels, pred_labels)
-            macro_F1s.append(macro_f1)
-            micro_F1s.append(micro_f1)
-            tp_i, fp_i, fn_i = _cnt_stat(test_labels, pred_labels)
-            tp += tp_i
-            fp += fp_i
-            fn += fn_i
-
-        # print "# Average Macro F1 = %3.1f +- %3.2f" % \
-        #     (100 * np.mean(macro_F1s), 100 * np.std(macro_F1s))
-        # print "# Average Micro F1 = %3.1f +- %3.2f" % \
-        #     (100 * np.mean(micro_F1s), 100 * np.std(micro_F1s))
-        # if tp or fp or fn:
-        #     print "# F1_{tp,fp} %.2f" % (2. * tp / (2. * tp + fp + fn) * 100)
-        # else:
-        #     print "# F1_{tp,fp} 0. %"
-
     def _update_model(self, model):
         if model is None:
             self.model = MateSegmenter.DEFAULT_PIPELINE
