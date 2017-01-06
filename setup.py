@@ -36,7 +36,7 @@ with codecs.open(path.join(PWD, "test-requirements.txt"),
 # setup()
 setup(
     name="dsegmenter",
-    version="0.2.0",
+    version="0.2.1",
     description=("Collection of discourse segmenters "
                  "(with pre-trained models for German)"),
     long_description=long_description,
@@ -58,7 +58,7 @@ setup(
     install_requires=INSTALL_REQUIRES,
     setup_requires=["pytest-runner"],
     tests_require=TEST_REQUIRES,
-    provides=["dsegmenter (0.2.0)"],
+    provides=["dsegmenter (0.2.1)"],
     scripts=[path.join("scripts", "discourse_segmenter"),
              path.join("scripts", "evaluation")],
     classifiers=["Development Status :: 4 - Beta",
