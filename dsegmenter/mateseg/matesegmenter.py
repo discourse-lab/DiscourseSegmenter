@@ -409,6 +409,9 @@ class MateSegmenter(object):
                 dep_graph, a_predict=decision_function,
                 a_word_access=word_access, a_strategy=GREEDY,
                 a_root_idx=dep_graph.root[ADDRESS])
+            if len(segments) > 1:
+                segments = [(0, DiscourseSegment(a_name=DEFAULT_SEGMENT,
+                                                 a_leaves=segments))]
         else:
             # make a simple sentence segment for invalid parse trees
             leaves = [(i, word) for i, (_, word) in
@@ -470,7 +473,7 @@ class MateSegmenter(object):
     def _update_model(self, model):
         if model is None:
             self.model = MateSegmenter.DEFAULT_PIPELINE
-        elif isinstance(model, str):
+        elif isinstance(model, basestring):
             if not os.path.isfile(model) or not os.access(model, os.R_OK):
                 raise RuntimeError("Can't load model from file {:s}".format(
                     model))

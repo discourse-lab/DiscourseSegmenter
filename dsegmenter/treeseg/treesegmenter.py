@@ -17,7 +17,7 @@ TreeSegmenter - class for converting parse trees to discourse segments
 
 ##################################################################
 # Imports
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, print_function, unicode_literals
 
 from dsegmenter.common import WORD, REL, DEPS, TAG
 from dsegmenter.treeseg.constants import GREEDY, GENEROUS, DEPENDENCY, \

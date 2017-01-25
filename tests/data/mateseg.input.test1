@@ -1,0 +1,27 @@
+1	Im	_	in	_	APPRART	_	dat|sg|neut	-1	15	_	MO	_	_
+2	Gegenteil	_	Gegenteil	_	NN	_	dat|sg|neut	-1	1	_	NK	_	_
+3	:	_	--	_	$.	_	_	-1	2	_	--	_	_
+4	Ein	_	ein	_	ART	_	nom|sg|masc	-1	5	_	NK	_	_
+5	Abbau	_	Abbau	_	NN	_	nom|sg|masc	-1	10	_	SB	_	_
+6	weniger	_	weniger	_	PIAT	_	gen|pl|masc	-1	8	_	NK	_	_
+7	produktiver	_	produktiv	_	ADJA	_	gen|pl|masc|pos	-1	8	_	NK	_	_
+8	Arbeitsplätze	_	Arbeitsplatz	_	NN	_	gen|pl|masc	-1	5	_	AG	_	_
+9	etwa	_	etwa	_	ADV	_	_	-1	8	_	MO	_	_
+10	würde	_	werden	_	VAFIN	_	sg|3|past|subj	-1	0	_	--	_	_
+11	zunächst	_	zunächst	_	ADV	_	_	-1	15	_	MO	_	_
+12	einmal	_	einmal	_	ADV	_	_	-1	15	_	MO	_	_
+13	die	_	der	_	ART	_	acc|sg|fem	-1	14	_	NK	_	_
+14	Arbeitslosigkeit	_	Arbeitslosigkeit	_	NN	_	acc|sg|fem	-1	15	_	OA	_	_
+15	erhöhen	_	erhöhen	_	VVINF	_	_	-1	10	_	OC	_	_
+16	,	_	--	_	$,	_	_	-1	15	_	--	_	_
+17	die	_	der	_	ART	_	acc|pl|fem	-1	19	_	NK	_	_
+18	staatlichen	_	staatlich	_	ADJA	_	acc|pl|fem|pos	-1	19	_	NK	_	_
+19	Aufwendungen	_	Aufwendung	_	NN	_	acc|pl|fem	-1	20	_	OA	_	_
+20	steigern	_	steigern	_	VVINF	_	_	-1	15	_	CJ	_	_
+21	und	_	und	_	KON	_	_	-1	20	_	CD	_	_
+22	die	_	der	_	ART	_	acc|pl|fem	-1	24	_	NK	_	_
+23	privaten	_	privat	_	ADJA	_	acc|pl|fem|pos	-1	24	_	NK	_	_
+24	Ausgaben	_	Ausgabe	_	NN	_	acc|pl|fem	-1	25	_	OA	_	_
+25	verringern	_	verringern	_	VVINF	_	_	-1	21	_	CJ	_	_
+26	.	_	--	_	$.	_	_	-1	25	_	--	_	_
+
